@@ -1169,13 +1169,17 @@ function sendFeedbackForm() {
   var cfg = (typeof FEEDBACK !== 'undefined') ? FEEDBACK : null;
   if (!cfg || !cfg.formUrl) { toast('⏳ Formulario aún no conectado: usa "Copiar crítica"', 2800); return; }
   var url = cfg.formUrl + (cfg.formUrl.indexOf('?') >= 0 ? '&' : '?') + 'usp=pp_url';
+  var els = document.querySelectorAll('.fb-tag.sel');
+  var tagArr = [];
+  for (var i = 0; i < els.length; i++) tagArr.push(els[i].textContent);
   if (cfg.entryTags) {
-    var els = document.querySelectorAll('.fb-tag.sel');
-    for (var i = 0; i < els.length; i++) url += '&' + cfg.entryTags + '=' + encodeURIComponent(els[i].textContent);
+    for (var j = 0; j < tagArr.length; j++) url += '&' + cfg.entryTags + '=' + encodeURIComponent(tagArr[j]);
   }
   var msg = ($('fb-text').value || '').trim();
   if (cfg.entryMsg) {
-    var full = msg || '(sin mensaje)';
+    var full = '';
+    if (!cfg.entryTags && tagArr.length) full += '[' + tagArr.join(' / ') + ']\n';
+    full += (msg || '(sin mensaje)');
     if (game && !game.over) full += '\n\n[mapa=' + game.mapId + ' oleada=' + game.wave + ' dif=' + game.difficulty + ' v=' + GAME_VERSION + ']';
     url += '&' + cfg.entryMsg + '=' + encodeURIComponent(full);
   }

@@ -6,9 +6,9 @@ var GAME_VERSION = '0.1.0-alpha';
 // formUrl: enlace base del formulario (viewform). entryTags/entryMsg: IDs
 // "entry.NNNNNN" del enlace previo para las casillas y el mensaje.
 var FEEDBACK = {
-  formUrl: '',
+  formUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSdJHHwY8QWsoCHZ3FtT39Gs02j9xlsPqXz18lTzm9eTmvodrw/viewform',
   entryTags: '',
-  entryMsg: ''
+  entryMsg: 'entry.279828834'
 };
 
 var CONFIG = {
