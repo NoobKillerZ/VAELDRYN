@@ -1,13 +1,64 @@
 {
   "name": "vaeldryn",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "VAELDRYN — tower defense (JS vanilla). Sin dependencias: solo Node.js.",
+  "author": "NoobKillerZ",
+  "main": "desktop/main.js",
   "scripts": {
     "smoke": "node tools/smoke.js",
     "balance": "node tools/sim_balance.js 4 --conquest --endless",
     "balance:quick": "node tools/sim_balance.js 2",
     "balance:conquest": "node tools/sim_balance.js 2 --only-conquest",
-    "gate": "node tools/balance_gate.js"
+    "gate": "node tools/balance_gate.js",
+    "desktop": "electron desktop/main.js",
+    "dist:win": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.noobkillerz.vaeldryn",
+    "productName": "VAELDRYN",
+    "directories": {
+      "output": "dist",
+      "buildResources": "desktop/icons"
+    },
+    "files": [
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "desktop/main.js"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "VAELDRYN"
+    }
+  },
+  "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "allowScripts": {
+    "electron@43.4.1": true
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
   }
 }

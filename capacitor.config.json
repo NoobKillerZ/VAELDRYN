@@ -1,0 +1,11 @@
+{
+  "appId": "com.noobkillerz.vaeldryn",
+  "appName": "VAELDRYN",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

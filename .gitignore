@@ -11,6 +11,17 @@ python/progress_vael.json
 # Dependencias / artefactos JS
 node_modules/
 
+# Builds de escritorio y móvil
+dist/
+www/
+
+# Proyecto Android generado por Capacitor (caches y salidas)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/capacitor-cordova-android-plugins/
+
 # Sistema
 Thumbs.db
 .DS_Store
