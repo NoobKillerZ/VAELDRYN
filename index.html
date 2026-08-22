@@ -2,9 +2,17 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>VAELDRYN — Torre de Defensa Medieval</title>
 <link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2a1c10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VAELDRYN">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
 <div id="loading-overlay">
@@ -61,6 +69,7 @@
             <button id="btn-resume" class="btn gold">▶ Reanudar</button>
             <button id="btn-pause-save" class="btn gold">💾 Guardar partida</button>
             <button id="btn-pause-audio" class="btn">🔊 Sonido</button>
+            <button id="btn-pause-feedback" class="btn">💬 Opinar (feedback)</button>
             <button id="btn-pause-fullscreen" class="btn">🖥️ Pantalla completa</button>
             <button id="btn-pause-quit" class="btn">🏠 Guardar y salir al menú</button>
           </div>
@@ -99,6 +108,7 @@
   <div id="menu-box">
     <h1>🏰 VAELDRYN</h1>
     <p class="tagline">Defiende el reino del Caos. Elige tu campo de batalla.</p>
+    <p id="alpha-tag">ALPHA</p>
     <div id="menu-stats">
       <div class="menu-stat"><span class="ic">⭐</span>Nivel <b id="menu-level">1</b></div>
       <div id="xpbar"><div id="menu-xpbar" class="xp-fill"></div></div>
@@ -118,6 +128,7 @@
     <div class="menu-btn-row">
       <button id="btn-achievements" class="btn gold">🏆 Logros 0/12</button>
       <button id="btn-scores" class="btn gold">🏅 Récords</button>
+      <button id="btn-feedback" class="btn">💬 Opinar</button>
       <button id="btn-reset-progress" class="btn">🗑️ Borrar progreso</button>
     </div>
   </div>
@@ -158,6 +169,28 @@
   </div>
 </div>
 
+<div id="feedback-overlay" class="hidden">
+  <div id="feedback-box">
+    <h1>💬 Tu opinión importa</h1>
+    <p class="fb-sub">Esta es una alpha: cada crítica constructiva ayuda a mejorar VAELDRYN. Marca temas y cuéntanos.</p>
+    <div id="fb-tags">
+      <button type="button" class="fb-tag">Jugabilidad</button>
+      <button type="button" class="fb-tag">Dificultad</button>
+      <button type="button" class="fb-tag">Gráficos</button>
+      <button type="button" class="fb-tag">Audio</button>
+      <button type="button" class="fb-tag">Rendimiento</button>
+      <button type="button" class="fb-tag">Controles móviles</button>
+    </div>
+    <textarea id="fb-text" rows="6" maxlength="2000" placeholder="¿Qué te gustó? ¿Qué mejorarías? ¿Encontraste algún fallo?"></textarea>
+    <p class="fb-hint">Se enviará con tu versión (<span id="fb-version"></span>) y contexto de partida para ayudarnos a entenderlo.</p>
+    <div class="menu-btn-row">
+      <button id="btn-fb-send" class="btn gold">📨 Enviar por Google Forms</button>
+      <button id="btn-fb-copy" class="btn">📋 Copiar crítica</button>
+      <button id="btn-fb-close" class="btn">✕ Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toasts"></div>
 
 <script src="js/config.js"></script>
@@ -173,5 +206,13 @@
 <script src="js/progress.js"></script>
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>
+<script>
+// PWA offline (solo web; Electron usa file:// y Capacitor localhost)
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && location.hostname !== 'localhost') {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+</script>
 </body>
 </html>

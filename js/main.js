@@ -1080,6 +1080,7 @@ function showScores() {
 function init() {
   var tipEl = $('load-tip');
   if (tipEl) tipEl.textContent = LOAD_TIPS[Math.floor(Math.random() * LOAD_TIPS.length)];
+  setupFeedback();
   $('btn-reset-progress').addEventListener('click', function () {
     if (typeof PROGRESS === 'undefined') return;
     if (confirm('¿Seguro que quieres borrar todo tu progreso y experiencia?')) {
@@ -1104,6 +1105,112 @@ function init() {
 
 function unlockAudioOnce() {
   if (typeof AUDIO !== 'undefined') AUDIO.ensure();
+}
+
+/* ===================== FEEDBACK ALPHA ===================== */
+var FB_TAGS = ['Jugabilidad', 'Dificultad', 'Gráficos', 'Audio', 'Rendimiento', 'Controles móviles'];
+
+function setupFeedback() {
+  var alphaTag = $('alpha-tag');
+  if (alphaTag) alphaTag.textContent = 'ALPHA ' + GAME_VERSION;
+  var verEl = $('fb-version');
+  if (verEl) verEl.textContent = GAME_VERSION;
+  var btnMenu = $('btn-feedback'), btnPause = $('btn-pause-feedback');
+  if (btnMenu) btnMenu.addEventListener('click', function () { openFeedback(); });
+  if (btnPause) btnPause.addEventListener('click', function () {
+    $('pause-overlay').classList.add('hidden');
+    game.paused = false;
+    openFeedback();
+  });
+  var btnClose = $('btn-fb-close');
+  if (btnClose) btnClose.addEventListener('click', closeFeedback);
+  var overlay = $('feedback-overlay');
+  if (overlay) overlay.addEventListener('click', function (e) { if (e.target === overlay) closeFeedback(); });
+  var tags = document.querySelectorAll('.fb-tag');
+  for (var i = 0; i < tags.length; i++) {
+    (function (b) {
+      b.addEventListener('click', function () { b.classList.toggle('sel'); sfx('ui_click'); });
+    })(tags[i]);
+  }
+  var btnSend = $('btn-fb-send');
+  if (btnSend) btnSend.addEventListener('click', sendFeedbackForm);
+  var btnCopy = $('btn-fb-copy');
+  if (btnCopy) btnCopy.addEventListener('click', copyFeedback);
+}
+
+function openFeedback() {
+  sfx('ui_click');
+  $('feedback-overlay').classList.remove('hidden');
+  var t = $('fb-text');
+  if (t) setTimeout(function () { t.focus(); }, 60);
+}
+
+function closeFeedback() {
+  $('feedback-overlay').classList.add('hidden');
+  sfx('ui_click');
+}
+
+function buildFeedbackText() {
+  var lines = ['🏰 VAELDRYN — Feedback (' + GAME_VERSION + ')'];
+  var tags = [];
+  var els = document.querySelectorAll('.fb-tag.sel');
+  for (var i = 0; i < els.length; i++) tags.push(els[i].textContent);
+  if (tags.length) lines.push('Temas: ' + tags.join(', '));
+  var msg = ($('fb-text').value || '').trim();
+  lines.push('', msg || '(sin mensaje)');
+  if (game && !game.over) {
+    lines.push('', 'Contexto: mapa=' + game.mapId + ' · oleada=' + game.wave + ' · dificultad=' + game.difficulty + ' · vidas=' + game.lives);
+  }
+  return lines.join('\n');
+}
+
+// Abre el formulario de Google con los campos ya rellenados
+function sendFeedbackForm() {
+  var cfg = (typeof FEEDBACK !== 'undefined') ? FEEDBACK : null;
+  if (!cfg || !cfg.formUrl) { toast('⏳ Formulario aún no conectado: usa "Copiar crítica"', 2800); return; }
+  var url = cfg.formUrl + (cfg.formUrl.indexOf('?') >= 0 ? '&' : '?') + 'usp=pp_url';
+  if (cfg.entryTags) {
+    var els = document.querySelectorAll('.fb-tag.sel');
+    for (var i = 0; i < els.length; i++) url += '&' + cfg.entryTags + '=' + encodeURIComponent(els[i].textContent);
+  }
+  var msg = ($('fb-text').value || '').trim();
+  if (cfg.entryMsg) {
+    var full = msg || '(sin mensaje)';
+    if (game && !game.over) full += '\n\n[mapa=' + game.mapId + ' oleada=' + game.wave + ' dif=' + game.difficulty + ' v=' + GAME_VERSION + ']';
+    url += '&' + cfg.entryMsg + '=' + encodeURIComponent(full);
+  }
+  window.open(url, '_blank');
+  toast('📨 Formulario abierto en tu navegador: revisa y envía', 2600);
+  closeFeedback();
+}
+
+function copyTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).catch(function () { return legacyCopy(text); });
+  }
+  return Promise.resolve(legacyCopy(text));
+}
+
+function legacyCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  if (!ok) throw new Error('clipboard bloqueado');
+  return true;
+}
+
+function copyFeedback() {
+  copyTextToClipboard(buildFeedbackText()).then(function () {
+    toast('📋 Crítica copiada. Pégala en el formulario o en Discord del dev', 3200);
+    closeFeedback();
+  }).catch(function () {
+    toast('⚠️ No se pudo copiar automáticamente; selecciona y copia manualmente', 3000);
+  });
 }
 
 window.addEventListener('DOMContentLoaded', init);

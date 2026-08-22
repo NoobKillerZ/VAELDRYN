@@ -1,6 +1,6 @@
 {
   "name": "vaeldryn",
-  "version": "1.1.0",
+  "version": "0.1.0",
   "private": true,
   "description": "VAELDRYN — tower defense (JS vanilla). Sin dependencias: solo Node.js.",
   "author": "NoobKillerZ",

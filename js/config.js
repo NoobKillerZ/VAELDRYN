@@ -1,5 +1,16 @@
 'use strict';
 
+var GAME_VERSION = '0.1.0-alpha';
+
+// Feedback de jugadores vía Google Forms.
+// formUrl: enlace base del formulario (viewform). entryTags/entryMsg: IDs
+// "entry.NNNNNN" del enlace previo para las casillas y el mensaje.
+var FEEDBACK = {
+  formUrl: '',
+  entryTags: '',
+  entryMsg: ''
+};
+
 var CONFIG = {
   COLS: 24,
   ROWS: 14,

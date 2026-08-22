@@ -25,3 +25,6 @@ android/capacitor-cordova-android-plugins/
 # Sistema
 Thumbs.db
 .DS_Store
+
+# Capturas de verificación
+tools/shot-*.png
