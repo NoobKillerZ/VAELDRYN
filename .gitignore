@@ -1,0 +1,16 @@
+# Entorno Python del port original (pygame)
+python/.venv/
+python/__pycache__/
+python/crash.log
+python/stdout.txt
+python/stderr.txt
+
+# Partidas guardadas locales del port pygame
+python/progress_vael.json
+
+# Dependencias / artefactos JS
+node_modules/
+
+# Sistema
+Thumbs.db
+.DS_Store

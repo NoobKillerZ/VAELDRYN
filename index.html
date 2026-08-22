@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VAELDRYN — Torre de Defensa Medieval</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="loading-overlay">
+  <div id="loading-box">
+    <div id="load-crest">🏰</div>
+    <h1>VAELDRYN</h1>
+    <p class="load-sub">Defensa del Reino Medieval</p>
+    <div id="load-bar"><div id="load-fill"></div></div>
+    <p id="load-status">Despertando el reino...</p>
+    <p id="load-tip"></p>
+  </div>
+</div>
+
+<div id="wrap">
+  <header id="hud-top">
+    <div class="title">🏰 VAELDRYN</div>
+    <div class="hud-group">
+      <div class="hud-stat" title="Nivel de comandante"><span class="ic">⭐</span><b id="stat-level">Nv 1</b></div>
+      <div class="hud-stat"><span class="ic">❤️</span><b id="stat-lives">20</b></div>
+      <div class="hud-stat"><span class="ic">🪙</span><b id="stat-gold">180</b></div>
+      <div class="hud-stat"><span class="ic">🌊</span><b id="stat-wave">0</b></div>
+      <div class="hud-stat"><span class="ic" id="weather-icon">☀️</span><b id="weather-name">Despejado</b></div>
+      <div class="hud-stat" title="Corrupción del reino"><span class="ic">☠️</span><b id="stat-corruption">0%</b></div>
+    </div>
+    <div class="hud-group">
+      <button id="btn-wave" class="btn gold">⚔️ Iniciar oleada</button>
+      <button id="btn-autowave" class="btn" title="Lanza oleadas automáticamente al terminar cada una">🔄 Auto</button>
+      <button id="btn-speed" class="btn">▶ 1x</button>
+      <button id="btn-pause" class="btn">⏸ Pausa</button>
+      <button id="btn-audio" class="btn" title="Activar/desactivar sonido">🎵</button>
+      <button id="btn-fullscreen" class="btn" title="Pantalla completa (F)">🖥️</button>
+    </div>
+  </header>
+
+  <div id="main">
+    <div id="canvas-wrap">
+      <canvas id="game" width="960" height="560"></canvas>
+      <div id="overlay" class="hidden">
+        <div id="overlay-box">
+          <h1 id="overlay-title"></h1>
+          <p id="overlay-text"></p>
+          <div id="overlay-stats"></div>
+          <button id="btn-continue" class="btn gold">⚔️ Seguir en modo infinito</button>
+          <button id="btn-restart" class="btn gold">🔄 Volver a jugar</button>
+        </div>
+      </div>
+      <div id="danger-vignette" class="hidden"></div>
+      <div id="wave-chip" class="hidden"></div>
+      <div id="conquest-chip" class="hidden"></div>
+      <div id="pause-overlay" class="hidden">
+        <div class="pause-box">
+          <span class="pause-icon">⏸</span><b>PAUSA</b>
+          <div class="pause-menu">
+            <button id="btn-resume" class="btn gold">▶ Reanudar</button>
+            <button id="btn-pause-save" class="btn gold">💾 Guardar partida</button>
+            <button id="btn-pause-audio" class="btn">🔊 Sonido</button>
+            <button id="btn-pause-fullscreen" class="btn">🖥️ Pantalla completa</button>
+            <button id="btn-pause-quit" class="btn">🏠 Guardar y salir al menú</button>
+          </div>
+          <small>Espacio o el botón para continuar · Mantén pulsado el mapa para cancelar</small>
+        </div>
+      </div>
+    </div>
+
+    <aside id="side">
+      <h3>🏗️ Torres</h3>
+      <div id="shop"></div>
+      <canvas id="minimap" width="240" height="140" title="Mini-mapa del campo de batalla"></canvas>
+      <div id="tower-panel" class="hidden">
+        <h3 id="tp-name"></h3>
+        <div id="tp-stats"></div>
+        <button id="btn-ability" class="btn gold hidden">✦ Habilidad (E)</button>
+        <button id="btn-priority" class="btn" title="Cambia a qué enemigo apunta esta torre (T)">🎯 Objetivo: Primero (T)</button>
+        <button id="btn-upgrade" class="btn gold">⬆️ Mejorar</button>
+        <button id="btn-repair" class="btn gold">🔧 Reparar</button>
+        <button id="btn-sell" class="btn">💰 Vender</button>
+      </div>
+      <div id="wave-preview">
+        <h3>📜 Próxima oleada</h3>
+        <p id="wave-info"></p>
+      </div>
+      <div id="director-panel">
+        <h3>🧠 Director</h3>
+        <p id="director-info">Analizando tu estrategia...</p>
+      </div>
+      <div id="shortcuts">⌨️ <b>N</b> oleada · <b>E</b> habilidad · <b>U</b> mejorar · <b>R</b> reparar · <b>V</b> vender · <b>T</b> objetivo · <b>Espacio</b> pausa · <b>F</b> pantalla · <b>Esc</b> cancelar · <b>1-9</b> torres</div>
+    </aside>
+  </div>
+</div>
+
+<div id="menu-overlay">
+  <div id="menu-box">
+    <h1>🏰 VAELDRYN</h1>
+    <p class="tagline">Defiende el reino del Caos. Elige tu campo de batalla.</p>
+    <div id="menu-stats">
+      <div class="menu-stat"><span class="ic">⭐</span>Nivel <b id="menu-level">1</b></div>
+      <div id="xpbar"><div id="menu-xpbar" class="xp-fill"></div></div>
+      <div class="menu-stat"><span class="ic">🏆</span>Victorias <b id="menu-wins">0</b></div>
+      <div class="menu-stat"><span class="ic">🌊</span>Mejor oleada <b id="menu-best">0</b></div>
+      <div class="menu-stat"><span class="ic">🕹️</span>Partidas <b id="menu-plays">0</b></div>
+    </div>
+    <div id="difficulty-box">
+      <span class="diff-label">Dificultad:</span>
+      <div id="difficulty-row"></div>
+      <div id="difficulty-info"></div>
+    </div>
+    <div id="map-grid"></div>
+    <button id="btn-menu-continue" class="btn gold hidden">▶️ Continuar partida guardada</button>
+    <button id="btn-menu-endless" class="btn gold hidden">♾️ Modo Infinito</button>
+    <button id="btn-menu-conquest" class="btn gold hidden">⚔️ Modo Conquista</button>
+    <div class="menu-btn-row">
+      <button id="btn-achievements" class="btn gold">🏆 Logros 0/12</button>
+      <button id="btn-scores" class="btn gold">🏅 Récords</button>
+      <button id="btn-reset-progress" class="btn">🗑️ Borrar progreso</button>
+    </div>
+  </div>
+</div>
+
+<div id="conquest-overlay" class="hidden">
+  <div id="conquest-box">
+    <h1>⚔️ Modo Conquista</h1>
+    <p>Elige una reliquia para comenzar. Comenzarás en la oleada 10 con oro extra, pero el reto será mayor.</p>
+    <div id="cq-relics"></div>
+    <button id="btn-cq-back" class="btn">↩ Volver</button>
+  </div>
+</div>
+
+<div id="achievements-overlay" class="hidden">
+  <div id="achievements-box">
+    <h1>🏆 Logros</h1>
+    <p id="ach-count">0/12 completados</p>
+    <div id="ach-list"></div>
+    <button id="btn-ach-back" class="btn">↩ Volver</button>
+  </div>
+</div>
+
+<div id="scores-overlay" class="hidden">
+  <div id="scores-box">
+    <h1>🏅 Salón de la Fama</h1>
+    <p id="scores-sub">Tus 10 mejores partidas: oleada, bajas y dificultad.</p>
+    <div id="scores-list"></div>
+    <button id="btn-scores-back" class="btn">↩ Volver</button>
+  </div>
+</div>
+
+<div id="relic-overlay" class="hidden">
+  <div id="relic-box">
+    <h1>📜 Elige una Reliquia</h1>
+    <p>El reino te recompensa por sobrevivir. Cada reliquia otorga un poder permanente.</p>
+    <div id="relic-choices"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script src="js/config.js"></script>
+<script src="js/artkit.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/towers.js"></script>
+<script src="js/waves.js"></script>
+<script src="js/director.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/relics.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Preview — Mapas VAELDRYN</title>
+<style>
+  body { background:#14161c; color:#ddd; font-family:sans-serif; margin:0; }
+  h1{text-align:center;font-size:15px;margin:10px 0 4px;color:#8af}
+  p.sub{text-align:center;font-size:11px;color:#667;margin:0 0 10px}
+  .grid{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;padding:0 14px 20px}
+  .map{background:#1c2230;border:1px solid #2a3242;border-radius:8px;padding:8px}
+  .map h2{font-size:12px;margin:0 0 6px;color:#ccc;text-align:center}
+  .map canvas{display:block;border-radius:4px}
+  #game{display:none}
+</style>
+</head>
+<body>
+<h1>Vista previa de mapas — VAELDRYN</h1>
+<p class="sub">Terreno orgánico, decoración con sombras y luz ambiental</p>
+<canvas id="game" width="960" height="560"></canvas>
+<div class="grid" id="grid"></div>
+<script src="js/config.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/game.js"></script>
+<script>
+var grid = document.getElementById('grid');
+var scale = 0.5;
+MAPS.forEach(function (m) {
+  var g = new Game(m.id);
+  var box = document.createElement('div');
+  box.className = 'map';
+  var title = document.createElement('h2');
+  title.textContent = m.icon + ' ' + m.name;
+  box.appendChild(title);
+  var cv = document.createElement('canvas');
+  cv.width = CONFIG.WIDTH * scale;
+  cv.height = CONFIG.HEIGHT * scale;
+  var cx = cv.getContext('2d');
+  cx.drawImage(g.bg, 0, 0, cv.width, cv.height);
+  // portal y castillo se dibujan por frame en el juego: los añadimos aquí
+  cx.save();
+  cx.scale(scale, scale);
+  g.drawPortal(cx);
+  g.drawCastle(cx);
+  cx.restore();
+  box.appendChild(cv);
+  grid.appendChild(box);
+});
+</script>
+</body>
+</html>
