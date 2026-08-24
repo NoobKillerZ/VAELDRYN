@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAELDRYN — Códice de Diseños</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: radial-gradient(circle at 30% 10%, #2a1c10, #120c06 70%);
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #e8d5a8; padding: 20px;
+  }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { color: #f2c86a; letter-spacing: 4px; font-size: 30px; text-shadow: 0 0 18px rgba(242,200,106,.4); }
+  header p { color: #cbb98f; font-size: 14px; margin-top: 6px; }
+  #version { display: inline-block; margin-top: 8px; padding: 2px 12px; font-size: 11px; letter-spacing: 2px;
+    color: #c9a86a; border: 1px solid #8a6a2a; border-radius: 999px; background: rgba(20,13,5,.6); }
+  section { max-width: 1240px; margin: 0 auto 30px; }
+  h2 {
+    color: #f2c86a; font-size: 20px; letter-spacing: 3px; border-bottom: 2px solid #6b4f2a;
+    padding-bottom: 8px; margin-bottom: 16px;
+  }
+  h2 .sub { font-size: 12px; color: #9a8a6a; letter-spacing: 1px; margin-left: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .card {
+    background: linear-gradient(#2a1e12, #1a130a);
+    border: 2px solid #6b4f2a; border-radius: 10px;
+    padding: 10px; text-align: center; position: relative;
+  }
+  .card.boss { border-color: #c83c3c; box-shadow: 0 0 14px rgba(200,60,60,.25); }
+  .card canvas { display: block; margin: 0 auto; }
+  .card .nm { color: #ffe08a; font-weight: bold; font-size: 14px; margin: 4px 0 6px; }
+  .card .desc { color: #a8977a; font-size: 11px; line-height: 1.45; margin-top: 6px; min-height: 30px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin: 4px 0; }
+  .chip {
+    font-size: 10px; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid #6b4f2a; color: #cbb98f; background: rgba(0,0,0,.25);
+  }
+  .chip.res { border-color: #4a7ab8; color: #9fd4ea; }
+  .chip.weak { border-color: #c98a3a; color: #ffc98a; }
+  .chip.special { border-color: #8a5aff; color: #c8b0ff; }
+  .chip.gold { border-color: #f2c86a; color: #ffd98a; background: rgba(242,200,106,.08); }
+  .stats { font-size: 12px; color: #e8d5a8; margin-top: 4px; }
+  .stats b { color: #ffe08a; }
+  footer { text-align: center; color: #6a5a44; font-size: 11px; padding: 20px 0 30px; }
+  @media (max-width: 600px) { body { padding: 10px; } .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏰 VAELDRYN — Códice de Diseños</h1>
+  <p>Todas las criaturas del Caos y las defensas del reino, renderizadas con el arte original del juego</p>
+  <span id="version"></span>
+</header>
+
+<section><h2>🏹 TORRES ALIADAS <span class="sub">las 14 defensas del reino</span></h2><div class="grid" id="g-towers"></div></section>
+<section><h2>⚔️ SOLDADOS ALIADOS <span class="sub">tropa de las barracas</span></h2><div class="grid" id="g-soldiers"></div></section>
+<section><h2>👑 JEFES DEL CAOS <span class="sub">cada 5 oleadas</span></h2><div class="grid" id="g-bosses"></div></section>
+<section><h2>👹 ENEMIGOS <span class="sub">hordas del portal</span></h2><div class="grid" id="g-enemies"></div></section>
+
+<footer>Códice generado en vivo desde el código del juego (artkit.js · enemies.js · towers.js · config.js)</footer>
+
+<script>
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+    return this;
+  };
+}
+</script>
+<script src="js/config.js"></script>
+<script src="js/artkit.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/towers.js"></script>
+<script>
+'use strict';
+document.getElementById('version').textContent = 'ALPHA ' + GAME_VERSION;
+document.title = 'VAELDRYN ' + GAME_VERSION + ' — Códice de Diseños';
+
+var EL_NAMES = { physical: 'Físico', fire: 'Fuego', ice: 'Hielo', earth: 'Tierra', nature: 'Naturaleza', holy: 'Sagrado', lightning: 'Rayo', void: 'Vacío' };
+var EL_ICONS = { physical: '⚔️', fire: '🔥', ice: '❄️', earth: '⛰️', nature: '🌿', holy: '✨', lightning: '⚡', void: '🌌' };
+
+var renderers = []; // {canvas, fn(t)}
+
+function makeCard(host, w, h, name, html) {
+  var card = document.createElement('div');
+  card.className = 'card';
+  var cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  card.appendChild(cv);
+  var nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = name;
+  card.appendChild(nm);
+  var box = document.createElement('div');
+  box.innerHTML = html;
+  card.appendChild(box);
+  host.appendChild(card);
+  return { card: card, cv: cv };
+}
+
+/* ===================== ENEMIGOS ===================== */
+function enemySt(r, t, flying) {
+  return {
+    r: r, walk: Math.sin(t * 4) * 0.9, atk: 0, anim: t * 5, freeze: false,
+    flying: !!flying, flap: Math.sin(t * 9), blink: (t * 5 % 8.5) > 8.18,
+    face: 1, enraged: false, ghost: 1
+  };
+}
+
+function drawEnemySprite(ctx, type, def, t, cx, cy) {
+  var r = def.r || 12;
+  var scale = Math.min(3.4, Math.max(1.3, 30 / r));
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+  var st = enemySt(r, t, def.flying);
+  var spec;
+  try { spec = Enemy.prototype._spec.call({ type: type, color: def.color }); }
+  catch (e) { spec = { skin: def.color, head: 'human', weapon: 'club', headR: 0.52, torso: 0.9 }; }
+  try {
+    if (typeof spec === 'string') {
+      if (spec === 'art:fireGolem') ART.fireGolem(ctx, r, st);
+      else if (spec === 'art:stoneGolem') ART.stoneGolem(ctx, r, st);
+      else if (spec === 'art:bat') ART.bat(ctx, r, st);
+      else if (spec === 'art:wisp') ART.wisp(ctx, r, st);
+      else if (spec === 'art:crawler') ART.spider(ctx, r, st);
+      else if (spec === 'dragon') Enemy.prototype._drawDragon.call({}, ctx, st, false);
+      else if (spec === 'iceDragon') Enemy.prototype._drawDragon.call({}, ctx, st, true);
+      else if (spec === 'treant') Enemy.prototype._drawTreant.call({}, ctx, st);
+      else if (spec === 'warMachine') Enemy.prototype._drawWarMachine.call({}, ctx, st);
+      else if (spec === 'voidLord') Enemy.prototype._drawVoidLord.call({}, ctx, st);
+      else if (spec === 'iceWraith') Enemy.prototype._drawIceWraith.call({}, ctx, st);
+      else if (spec === 'stormSpirit') Enemy.prototype._drawStormSpirit.call({}, ctx, st);
+    } else {
+      if (type === 'phaseStalker') {
+        // espectro fásico: semi-transparente con aura de fase
+        ctx.globalAlpha = 0.45;
+        ART.figure(ctx, spec, st);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(159,208,255,' + (0.35 + 0.25 * Math.sin(t * 6)) + ')';
+        ctx.lineWidth = 1.4 / scale;
+        ctx.beginPath(); ctx.arc(0, 0, r + 5, 0, 6.28); ctx.stroke();
+      } else {
+        ART.figure(ctx, spec, st);
+      }
+      if (type === 'orcShield' && def.shieldHits) {
+        // torre de escudos al frente
+        var shp = 1 + Math.sin(t * 4) * 0.05;
+        ctx.save();
+        ctx.translate(r * 0.8, 0);
+        ctx.scale(shp, shp);
+        ctx.fillStyle = '#8a8f9c';
+        ctx.beginPath();
+        ctx.moveTo(-6, -13); ctx.lineTo(7, -9); ctx.lineTo(7, 4);
+        ctx.quadraticCurveTo(7, 12, 0, 15);
+        ctx.quadraticCurveTo(-7, 12, -6, 4);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#d8dce4'; ctx.lineWidth = 1.4; ctx.stroke();
+        ctx.fillStyle = '#c9a84c';
+        ctx.beginPath(); ctx.arc(0.5, -2, 2.6, 0, 6.28); ctx.fill();
+        ctx.restore();
+      }
+      if (type === 'mender' && def.healAura) {
+        ctx.globalAlpha = 0.6 + 0.3 * Math.sin(t * 3);
+        ctx.fillStyle = '#7aff9a';
+        ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('✚', 0, -r - 10);
+        ctx.globalAlpha = 1;
+      }
+    }
+  } catch (e) { /* arte no disponible: silencio */ }
+  ctx.restore();
+}
+
+function enemyCardHtml(def) {
+  var h = '<div class="stats">❤️ <b>' + def.hp + '</b> · 💨 <b>' + def.speed + '</b> · 🪙 <b>' + def.reward + '</b>';
+  if (def.armor) h += ' · 🛡 <b>' + def.armor + '</b>';
+  h += '</div><div class="chips">';
+  if (def.flying) h += '<span class="chip special">🕊 vuela</span>';
+  var k;
+  if (def.resist) for (k in def.resist) h += '<span class="chip res">' + (EL_ICONS[k] || k) + ' ×' + def.resist[k] + '</span>';
+  if (def.weak) for (k in def.weak) h += '<span class="chip weak">' + (EL_ICONS[k] || k) + ' ×' + def.weak[k] + '</span>';
+  if (def.shieldHits) h += '<span class="chip special">🛡️ bloquea ' + def.shieldHits + ' impactos</span>';
+  if (def.healAura) h += '<span class="chip special">✚ cura aliados</span>';
+  if (def.cloak) h += '<span class="chip special">👻 invisible cíclico</span>';
+  if (def.split) h += '<span class="chip special">✂️ se divide</span>';
+  if (def.revive) h += '<span class="chip special">💀 resucita</span>';
+  if (def.regen) h += '<span class="chip special">💚 regen ' + def.regen + '/s</span>';
+  if (def.enrage) h += '<span class="chip special">😡 se enfurece</span>';
+  if (def.steal) h += '<span class="chip special">💰 roba oro</span>';
+  if (def.targetsTowers) h += '<span class="chip special">🎯 ataca torres</span>';
+  if (def.buff || def.buffShaman) h += '<span class="chip special">🌀 benefitedor</span>';
+  if (def.necro) h += '<span class="chip special">☠️ invoca esqueletos</span>';
+  if (def.explode) h += '<span class="chip special">💥 explota al morir</span>';
+  if (def.corruption) h += '<span class="chip special">🌑 corrompe ' + def.corruption + '</span>';
+  h += '</div><div class="desc">' + (def.desc || '') + '</div>';
+  return h;
+}
+
+function buildEnemies() {
+  var bosses = document.getElementById('g-bosses');
+  var commons = document.getElementById('g-enemies');
+  var keys = Object.keys(ENEMIES).sort(function (a, b) { return (ENEMIES[a].hp || 0) - (ENEMIES[b].hp || 0); });
+  keys.forEach(function (type) {
+    var def = ENEMIES[type];
+    var host = def.boss ? bosses : commons;
+    var size = def.boss ? 150 : 120;
+    var c = makeCard(host, size, size, def.name, enemyCardHtml(def));
+    if (def.boss) c.card.classList.add('boss');
+    var ctx = c.cv.getContext('2d');
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    renderers.push((function (ctx, type, def, size) {
+      return function (t) {
+        ctx.clearRect(0, 0, size, size);
+        drawEnemySprite(ctx, type, def, t, size / 2, size / 2 + 4);
+      };
+    })(ctx, type, def, size));
+  });
+}
+
+/* ===================== TORRES ===================== */
+var stubGame = {
+  time: 0, wave: 8, enemies: [], projectiles: [], particles: [], texts: [],
+  lightning: [], soldiers: [], weatherMult: function () { return 1; },
+  corruption: {}, corruptTotal: 0
+};
+
+function buildTowers() {
+  var host = document.getElementById('g-towers');
+  TOWER_TYPES.forEach(function (type) {
+    var def = TOWERS[type];
+    var el = def.element || 'physical';
+    var h = '<div class="chips"><span class="chip gold">' + def.icon + ' ' + EL_NAMES[el] + '</span>' +
+      '<span class="chip">🪙 ' + def.cost + '</span>' +
+      (def.unlock ? '<span class="chip">🔒 oleada ' + def.unlock.wave + '</span>' : '') + '</div>';
+    h += '<div class="stats">';
+    if (def.damage) h += '⚔️ <b>' + def.damage + '</b>';
+    if (def.rate) h += ' · ⏱ ' + (1 / def.rate).toFixed(1) + '/s';
+    h += ' · 📏 <b>' + def.range + '</b></div>';
+    h += '<div class="chips">';
+    if (def.targetCap) h += '<span class="chip special">multiobjetivo ×' + def.targetCap + '</span>';
+    if (def.pierce) h += '<span class="chip special">perfora ' + def.pierce + '</span>';
+    if (def.aoe) h += '<span class="chip special">💥 área ' + def.aoe + '</span>';
+    if (def.chains) h += '<span class="chip special">⚡ encadena ' + def.chains + '</span>';
+    if (def.poison) h += '<span class="chip special">☠️ veneno</span>';
+    if (def.burn) h += '<span class="chip special">🔥 quemadura</span>';
+    if (def.aura) h += '<span class="chip special">aura ×' + def.aura + '</span>';
+    if (def.ignoreArmor) h += '<span class="chip special">ignora armadura</span>';
+    h += '</div>';
+    if (def.ability) h += '<div class="stats" style="font-size:11px">✦ <b>' + def.ability.name + '</b> (' + def.ability.cd + 's)</div>';
+    h += '<div class="desc">' + (def.desc || '') + '</div>';
+    var c = makeCard(host, 130, 130, def.name, h);
+    var ctx = c.cv.getContext('2d');
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    var tower = null;
+    try { tower = new Tower(1, 1, type, stubGame); } catch (e) { tower = null; }
+    renderers.push((function (ctx, tower) {
+      return function (t) {
+        ctx.clearRect(0, 0, 130, 130);
+        if (!tower) return;
+        stubGame.time = t;
+        tower.aim = -Math.PI / 2 + Math.sin(t * 0.7) * 0.35;
+        ctx.save();
+        ctx.translate(65, 78);
+        ctx.scale(2, 2);
+        try { tower.draw(ctx, stubGame); } catch (e) {
+          ctx.fillStyle = '#6a5a3a';
+          ctx.beginPath(); ctx.roundRect(-14, -20, 28, 30, 4); ctx.fill();
+        }
+        ctx.restore();
+      };
+    })(ctx, tower));
+  });
+}
+
+/* ===================== SOLDADOS ===================== */
+function buildSoldiers() {
+  var host = document.getElementById('g-soldiers');
+  var info = {
+    swordsman: { nombre: 'Espadachín', stats: '❤️ <b>130</b> · ⚔️ <b>14</b> · 🛡 1', extra: 'Bloquea enemigos en el camino y los hace retroceder con cada golpe.' },
+    archer: { nombre: 'Arquero', stats: '❤️ <b>60</b> · 🏹 <b>10</b> · 📏 90', extra: 'Ataque a distancia: alcanza incluso a enemigos que el espadachín no puede tocar.' },
+    shieldbearer: { nombre: 'Portaescudos', stats: '❤️ <b>220</b> · ⚔️ <b>12</b> · 🛡 4', extra: 'Muro viviente: aguanta jefes y multitudes mientras las torres disparan.' },
+    mage: { nombre: 'Mago', stats: '❤️ <b>80</b> · ✨ <b>18</b> · 🌿', extra: 'Daño mágico a distancia que ignora armaduras físicas.' }
+  };
+  Object.keys(SOLDIER_TYPES).forEach(function (stype) {
+    var def = SOLDIER_TYPES[stype];
+    var inf = info[stype] || { nombre: stype, stats: '', extra: '' };
+    var h = '<div class="stats">' + inf.stats + '</div><div class="desc">' + inf.extra + '</div>';
+    var c = makeCard(host, 110, 120, inf.nombre, h);
+    var ctx = c.cv.getContext('2d');
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    var soldier = null;
+    try { soldier = new AlliedSoldier(0, 0, stype, { hp: 100, dmg: 12, rate: 0.8, range: 28 }, null); } catch (e) { soldier = null; }
+    renderers.push((function (ctx, soldier) {
+      return function (t) {
+        ctx.clearRect(0, 0, 110, 120);
+        if (!soldier) return;
+        soldier.anim = t;
+        soldier.facing = Math.sin(t * 0.8) * 0.4;
+        ctx.save();
+        ctx.translate(55, 78);
+        ctx.scale(3, 3);
+        try { soldier.draw(ctx); } catch (e) { }
+        ctx.restore();
+      };
+    })(ctx, soldier));
+  });
+}
+
+/* ===================== BUCLE DE ANIMACIÓN ===================== */
+buildTowers();
+buildSoldiers();
+buildEnemies();
+
+var last = 0;
+function loop(ts) {
+  var t = ts / 1000;
+  if (t - last > 1 / 30) { // ~30 fps: suficiente y ligero
+    last = t;
+    for (var i = 0; i < renderers.length; i++) renderers[i](t);
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

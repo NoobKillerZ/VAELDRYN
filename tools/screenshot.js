@@ -26,6 +26,11 @@ app.whenReady().then(async () => {
     await win.webContents.executeJavaScript("document.getElementById('btn-side-toggle').click()");
     await new Promise(r => setTimeout(r, 400));
   }
+  const scrollY = parseInt(process.argv[5] || '0', 10);
+  if (scrollY > 0) {
+    await win.webContents.executeJavaScript("window.scrollTo(0, " + scrollY + ")");
+    await new Promise(r => setTimeout(r, 400));
+  }
   const img = await win.webContents.capturePage();
   fs.writeFileSync(out, img.toPNG());
   console.log('captura:', out);
