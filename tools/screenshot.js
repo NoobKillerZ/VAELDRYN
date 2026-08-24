@@ -9,6 +9,7 @@ const w = parseInt(process.argv[2], 10) || 800;
 const h = parseInt(process.argv[3], 10) || 380;
 const out = process.argv[4] || path.join(__dirname, 'shot.png');
 const battle = process.argv.includes('--battle');
+const toggleSide = process.argv.includes('--toggle-side');
 
 app.whenReady().then(async () => {
   const win = new BrowserWindow({ width: w, height: h, useContentSize: true, show: true });
@@ -20,6 +21,10 @@ app.whenReady().then(async () => {
     );
     console.log('mapa elegido:', ok);
     await new Promise(r => setTimeout(r, 2500));
+  }
+  if (toggleSide) {
+    await win.webContents.executeJavaScript("document.getElementById('btn-side-toggle').click()");
+    await new Promise(r => setTimeout(r, 400));
   }
   const img = await win.webContents.capturePage();
   fs.writeFileSync(out, img.toPNG());

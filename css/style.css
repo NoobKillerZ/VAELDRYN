@@ -6,6 +6,9 @@ body {
   color: #e8d5a8;
   display: flex; align-items: center; justify-content: center;
   min-height: 100vh; padding: 10px;
+  /* Safe areas: respeta notch y barras del sistema (0 en escritorio) */
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+           max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   overflow: hidden;
 }
 #wrap {
@@ -485,6 +488,16 @@ body {
 
 /* ===================== SOPORTE MÓVIL / TÁCTIL ===================== */
 #game { touch-action: none; }
+/* Botón flotante para plegar el panel lateral (solo móvil) */
+#btn-side-toggle {
+  display: none; position: absolute; left: 10px; bottom: 10px; z-index: 26;
+  min-width: 44px; min-height: 40px; padding: 4px 10px; font-size: 18px; line-height: 1;
+  opacity: .88;
+}
+body.side-collapsed #side { display: none !important; }
+/* Respuesta táctil inmediata en botones (elimina retardo de doble-tap) */
+.btn, .shop-btn, .fb-tag, .diff-btn, .map-card, .relic-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#toasts { bottom: calc(18px + env(safe-area-inset-bottom)); }
 @media (pointer: coarse) {
   .btn { min-height: 42px; font-size: 15px; padding: 8px 16px; }
   .shop-btn { min-height: 54px; }
@@ -492,8 +505,9 @@ body {
   .toast { font-size: 14px; max-width: 92vw; }
 }
 @media (max-width: 700px) {
-  body { padding: 4px; overflow: auto; }
+  body { padding: 4px; padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); overflow: auto; }
   #wrap { height: auto; min-height: 100%; }
+  #btn-side-toggle { display: block; }
 
   /* HUD de una fila, ultra compacto */
   #hud-top { padding: 5px 6px; gap: 5px; border-radius: 8px 8px 0 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
@@ -534,6 +548,7 @@ body {
     width: min(340px, 94vw); max-height: 52vh; overflow-y: auto;
     z-index: 45; box-shadow: 0 10px 26px rgba(0, 0, 0, .75);
   }
+  #tower-panel { bottom: calc(72px + env(safe-area-inset-bottom)); }
   .pause-menu { width: min(260px, 80vw); }
 }
 
@@ -585,7 +600,8 @@ body {
   #loading-box h1 { font-size: 30px; letter-spacing: 5px; }
   .load-sub { margin-bottom: 12px; }
 
-  body { padding: 3px; }
+  body { padding: 3px; padding: max(3px, env(safe-area-inset-top)) max(3px, env(safe-area-inset-right)) max(3px, env(safe-area-inset-bottom)) max(3px, env(safe-area-inset-left)); }
+  #btn-side-toggle { display: block; }
   #hud-top { padding: 4px 8px; gap: 8px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; border-radius: 8px 8px 0 0; box-shadow: none; }
   .title { display: none; }
   .hud-group { gap: 8px; flex-wrap: nowrap; }
@@ -598,8 +614,9 @@ body {
   #canvas-wrap { min-height: 0; flex: 1; }
   #side { width: 170px; gap: 6px; padding-right: 2px; max-height: none; overflow-y: auto; overflow-x: hidden; }
   #side h3 { font-size: 12px; padding-bottom: 3px; margin-bottom: 5px; }
-  #director-panel, #shortcuts { display: none; }
-  #minimap { border-width: 1px; border-radius: 6px; }
+  /* El minimapa es redundante con el mapa completo visible: fuera, para
+     que las 14 torres de la tienda quepan sin scroll */
+  #director-panel, #shortcuts, #minimap { display: none; }
   #wave-preview { padding: 6px; font-size: 10px; line-height: 1.4; }
 
   /* Tienda: cuadrícula de iconos compacta */

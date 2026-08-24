@@ -623,6 +623,12 @@ function bindEvents() {
   });
 
   $('btn-wave').addEventListener('click', function () { game.startWave(); });
+  var btnSideTg = $('btn-side-toggle');
+  if (btnSideTg) btnSideTg.addEventListener('click', function () {
+    var collapsed = document.body.classList.toggle('side-collapsed');
+    btnSideTg.textContent = collapsed ? '«' : '»';
+    sfx('ui_click');
+  });
   $('btn-autowave').addEventListener('click', function () {
     game.autoWave = !game.autoWave;
     game.autoTimer = 2;
