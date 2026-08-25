@@ -144,6 +144,8 @@ class Enemy {
     if (tower && tower.game && tower.game.critChance > 0 && Math.random() < tower.game.critChance) { d *= 1.5; crit = true; }
     this.hp -= d;
     this.flash = 0.1;
+    // crédito de baja: la última torre que golpeó se lleva el kill
+    if (tower) this.lastHitBy = tower;
     // Número flotante de daño con anti-spam por enemigo
     if (tower && this.game.addDmgText && (!this.lastDmgShow || this.game.time - this.lastDmgShow > 0.09)) {
       this.lastDmgShow = this.game.time;
@@ -172,11 +174,13 @@ class Enemy {
     if (this.flash > 0) this.flash -= dt;
     if (this.burn) {
       this.burn.t -= dt;
+      if (this.burn.src) this.lastHitBy = this.burn.src;
       this.takeDamage(this.burn.dps * dt, 'fire');
       if (this.burn.t <= 0) this.burn = null;
     }
     if (this.poison) {
       this.poison.t -= dt;
+      if (this.poison.src) this.lastHitBy = this.poison.src;
       this.takeDamage(this.poison.dps * dt, 'nature');
       if (this.poison.t <= 0) this.poison = null;
     }

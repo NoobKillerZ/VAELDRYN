@@ -646,6 +646,11 @@ class Game {
     this.gold += reward;
     this.stats.goldEarned += reward;
     this.kills++;
+    // crédito de baja a la torre (último golpe directo o dueño del veneno/quemadura)
+    if (e.lastHitBy && typeof e.lastHitBy.kills === 'number') {
+      e.lastHitBy.kills++;
+      e.lastHitBy = null;
+    }
     this.texts.push({ x: e.x, y: e.y - 16, txt: '+' + reward + ' 🪙', life: 0.9, max: 0.9, color: '#ffd24a', vy: -25, size: 11 });
     if (e.type === 'splitter' && typeof unlockAchievement === 'function' && unlockAchievement('splitter_kill')) {
       this._achNotify('Atomizador');

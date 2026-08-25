@@ -56,7 +56,7 @@ var ABILITY_FX = {
       var dx = e.x - cx, dy = e.y - cy;
       if (dx * dx + dy * dy <= r * r) {
         e.takeDamage(t.damage * 2.2 * g.weatherMult('fire'), 'fire', t);
-        if (e.alive) e.burn = { dps: t.damage * 0.5 * g.weatherMult('fire'), t: 3 };
+        if (e.alive) e.burn = { dps: t.damage * 0.5 * g.weatherMult('fire'), t: 3, src: t };
       }
     }
     g.explosion(cx, cy, r, '#ff7a30');
@@ -128,7 +128,7 @@ var ABILITY_FX = {
       var dx = e.x - t.x, dy = e.y - t.y;
       if (dx * dx + dy * dy <= r * r) {
         e.takeDamage(t.damage * 1.5 * g.weatherMult('nature'), 'nature', t);
-        if (e.alive) e.poison = { dps: (t.poison ? t.poison.dps : 8) * 3, t: 4 };
+        if (e.alive) e.poison = { dps: (t.poison ? t.poison.dps : 8) * 3, t: 4, src: t };
       }
     }
     for (var j = 0; j < 18; j++) {
@@ -2244,8 +2244,8 @@ class Projectile {
         if (dx * dx + dy * dy <= opts.aoe * opts.aoe) {
           e.takeDamage(this.damage * game.weatherMult(this.element), this.element, this.tower, this.opts.ignoreArmor);
           if (e.alive) {
-            if (opts.burn) e.burn = { dps: this.damage * 0.22 * game.weatherMult(this.element), t: 3 };
-            if (opts.poison) e.poison = { dps: opts.poison.dps, t: opts.poison.t };
+            if (opts.burn) e.burn = { dps: this.damage * 0.22 * game.weatherMult(this.element), t: 3, src: this.tower };
+            if (opts.poison) e.poison = { dps: opts.poison.dps, t: opts.poison.t, src: this.tower };
             if (opts.hex) e.hex = { mult: opts.hex.mult, t: opts.hex.t };
             if (opts.slow) e.slow = { mult: opts.slow, t: opts.slowDur || 2 };
             if (opts.kb) e.pathPos = Math.max(0, e.pathPos - opts.kb);

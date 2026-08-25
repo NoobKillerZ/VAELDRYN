@@ -33,7 +33,18 @@ app.whenReady().then(async () => {
     );
     console.log('estado:', state);
     const waveFlag = process.argv.find(a => a === '--wave' || a.startsWith('--wave='));
-    if (waveFlag) {
+    if (process.argv.includes('--killtest')) {
+      // prueba de crédito de bajas: arquero adyacente al camino + oleada 1
+      const res = await win.webContents.executeJavaScript(
+        "(function(){try{var ok=game.canPlace(5,2);game.towers.push(new Tower(5,2,'archer',game));game.towers[game.towers.length-1].x=(5.5)*40;game.towers[game.towers.length-1].y=(2.5)*40;game.startWave();return 'torre=' + ok;}catch(e){return 'ERR ' + e.message;}})()"
+      );
+      console.log('killtest:', res);
+      await new Promise(r => setTimeout(r, 16000));
+      const kt = await win.webContents.executeJavaScript(
+        "(function(){try{return 'kills torre=' + game.towers[0].kills + ' | kills global=' + game.kills + ' | enemigos=' + game.enemies.length;}catch(e){return 'ERR ' + e.message;}})()"
+      );
+      console.log(kt);
+    } else if (waveFlag) {
       const wv = waveFlag.startsWith('--wave=') ? waveFlag.slice(7) : null;
       if (wv) await win.webContents.executeJavaScript("try { game.wave = " + wv + "; } catch(e) {}");
       await win.webContents.executeJavaScript("try { game.startWave(); } catch(e) {}");
