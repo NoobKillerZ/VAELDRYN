@@ -9,7 +9,7 @@ const path = require('path');
 const MAP = {
   towers: {
     dir: 'art/towers',
-    cells: { cols: 7, ys: [50, 266], x0: 2, cw: 145.5, w: 138, cropH: 143 },
+    cells: { cols: 7, ys: [50, 266], x0: 2, cw: 145.5, w: 130, cropH: 136 },
     names: [
       ['archer', 'fire', 'ice', 'venom', 'crossbow', 'dwarf', 'druid'],
       ['tesla', 'knight', 'sniper', 'holy', 'banner', 'warlock', 'barracks']
@@ -17,17 +17,17 @@ const MAP = {
   },
   soldiers: {
     dir: 'art/soldiers',
-    cells: { cols: 4, ys: [508], x0: 8, cw: 256, w: 240, cropH: 145 },
+    cells: { cols: 4, ys: [508], x0: 8, cw: 256, w: 208, cropH: 128 },
     names: [['swordsman', 'archer', 'shieldbearer', 'mage']]
   },
   bosses: {
     dir: 'art/enemies',
-    cells: { cols: 6, ys: [684], x0: 4, cw: 169, w: 162, cropH: 183 },
+    cells: { cols: 6, ys: [684], x0: 4, cw: 169, w: 152, cropH: 172 },
     names: [['dragon', 'orcKing', 'lord', 'iceDragon', 'warMachine', 'voidLord']]
   },
   enemies: {
     dir: 'art/enemies',
-    cells: { cols: 8, ys: [972, 1110, 1250, 1390], x0: 4, cw: 126.5, w: 120, cropH: 105 },
+    cells: { cols: 8, ys: [972, 1110, 1250, 1390], x0: 4, cw: 126.5, w: 112, cropH: 97 },
     names: [
       ['splitterTiny', 'goblin', 'bat', 'crawler', 'lich', 'splitterSmall', 'skeleton', 'assassin'],
       ['wisp', 'sorcerer', 'stormSpirit', 'mender', 'iceWraith', 'phaseStalker', 'orc', 'shaman'],
@@ -106,7 +106,7 @@ function extractor(MAP, sheetUrl) {
           var i = yy * W + xx;
           if (mask[i]) continue;
           var p = i * 4;
-          if (dist([px[p], px[p + 1], px[p + 2]], bg) > 88) continue;
+          if (dist([px[p], px[p + 1], px[p + 2]], bg) > 170) continue; var mxp = Math.max(px[p], px[p + 1], px[p + 2]); if (mxp > 115) continue;
           mask[i] = 1;
           stack.push(xx + 1, yy, xx - 1, yy, xx, yy + 1, xx, yy - 1);
         }
@@ -125,7 +125,21 @@ function extractor(MAP, sheetUrl) {
         var cw = maxX - minX + 1, chh = maxY - minY + 1;
         var out = document.createElement('canvas');
         out.width = cw; out.height = chh;
-        out.getContext('2d').putImageData(ctx.getImageData(sx + minX, sy + minY, cw, chh), 0, 0);
+        var octx = out.getContext('2d');
+        octx.putImageData(ctx.getImageData(sx + minX, sy + minY, cw, chh), 0, 0);
+        // feather: alfa suavizada hacia los bordes (evita cajas duras)
+        var od = octx.getImageData(0, 0, cw, chh);
+        var op = od.data, F = 10;
+        for (var fy = 0; fy < chh; fy++) {
+          for (var fx2 = 0; fx2 < cw; fx2++) {
+            var dEdge = Math.min(fx2, cw - 1 - fx2, fy, chh - 1 - fy);
+            if (dEdge < F) {
+              var k = (fy * cw + fx2) * 4;
+              op[k + 3] = op[k + 3] * (dEdge / F);
+            }
+          }
+        }
+        octx.putImageData(od, 0, 0);
         return out;
       }
 
