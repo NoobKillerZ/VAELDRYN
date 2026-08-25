@@ -847,21 +847,6 @@ class Enemy {
       if (spec === 'stormSpirit') { this._drawStormSpirit(ctx, st); return; }
     }
     if (this.flash > 0) whitewash(spec);
-    // sprite oficial si está disponible: hereda bob/lean/squash del caller
-    var deathA = -1;
-    if (st.death != null && st.death >= 0) {
-      var dFall = st.death;
-      deathA = Math.max(0, 1 - dFall * 1.15);
-      ctx.save();
-      ctx.translate(this.x, y);
-      ctx.rotate(this.face * dFall * dFall * 1.3);
-      ctx.translate(-this.x, -y);
-    }
-    if (typeof SPRITES !== 'undefined' && SPRITES.draw(ctx, 'e', this.type, this.x, y + this.r * 0.85, this.r * 3.1, st.hurt, deathA)) {
-      if (deathA >= 0) ctx.restore();
-      return;
-    }
-    if (deathA >= 0) ctx.restore();
     ART.figure(ctx, spec, st);
   }
 
