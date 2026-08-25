@@ -1,5 +1,5 @@
-'use strict';
-// Sincroniza los assets del juego (raíz) hacia www/ para el build móvil.
+﻿'use strict';
+// Sincroniza los assets del juego (raÃ­z) hacia www/ para el build mÃ³vil.
 // Uso: node tools/sync_mobile.js
 const fs = require('fs');
 const path = require('path');
@@ -11,6 +11,7 @@ fs.mkdirSync(www, { recursive: true });
 fs.cpSync(path.join(root, 'css'), path.join(www, 'css'), { recursive: true });
 fs.cpSync(path.join(root, 'js'), path.join(www, 'js'), { recursive: true });
 fs.cpSync(path.join(root, 'icons'), path.join(www, 'icons'), { recursive: true });
+fs.cpSync(path.join(root, 'art'), path.join(www, 'art'), { recursive: true });
 fs.copyFileSync(path.join(root, 'index.html'), path.join(www, 'index.html'));
 fs.copyFileSync(path.join(root, 'manifest.webmanifest'), path.join(www, 'manifest.webmanifest'));
 fs.copyFileSync(path.join(root, 'sw.js'), path.join(www, 'sw.js'));

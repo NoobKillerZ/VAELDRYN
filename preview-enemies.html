@@ -28,10 +28,21 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 }
 </script>
 <script src="js/config.js"></script>
+<script src="js/sprites.js"></script>
 <script src="js/artkit.js"></script>
 <script src="js/enemies.js"></script>
 <script src="js/towers.js"></script>
 <script>
+if (typeof SPRITES !== 'undefined') {
+  var _pk = [];
+  Object.keys(ENEMIES).forEach(function (k) { _pk.push(['e', k]); });
+  TOWER_TYPES.forEach(function (k) { _pk.push(['t', k]); });
+  Object.keys(SOLDIER_TYPES).forEach(function (k) { _pk.push(['s', k]); });
+  SPRITES.preload(_pk);
+}
+</script>
+<script>
+setTimeout(function () {
 var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 ctx.lineJoin = 'round'; ctx.lineCap = 'round';
 var T = 1.35; // fase de animación congelada (zancada media)
@@ -54,6 +65,7 @@ function drawEnemy(type, def, x, y, cell) {
   var spec;
   try { spec = Enemy.prototype._spec.call({ type: type, color: def.color }); }
   catch (e) { spec = { skin: def.color, head: 'human', weapon: 'club', headR: 0.52, torso: 0.9 }; }
+  if (typeof SPRITES !== 'undefined' && SPRITES.draw(ctx, 'e', type, 0, 10, r * 3.1, 0, null)) { ctx.restore(); return; }
   try {
     if (typeof spec === 'string') {
       if (spec === 'art:fireGolem') ART.fireGolem(ctx, r, st(r));
@@ -157,6 +169,7 @@ y = eY + Math.ceil(commonKeys.length / eCols) * 118 + 10;
 
 ctx.fillStyle = '#445'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
 ctx.fillText('VAELDRYN ' + (typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : '') + ' — generado desde el código del juego', cv.width / 2, y + 8);
+}, 900);
 </script>
 </body>
 </html>

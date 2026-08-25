@@ -1122,6 +1122,14 @@ function init() {
   window.addEventListener('pointerdown', unlockAudioOnce, { once: true });
   requestAnimationFrame(function (ts) { lastTs = ts; loop(ts); });
   requestAnimationFrame(function () { runBoot(0, performance.now()); });
+  // sprites oficiales de personajes (fallback procedural si fallan)
+  if (typeof SPRITES !== 'undefined') {
+    var keys = [];
+    Object.keys(ENEMIES).forEach(function (k) { keys.push(['e', k]); });
+    TOWER_TYPES.forEach(function (k) { keys.push(['t', k]); });
+    Object.keys(SOLDIER_TYPES).forEach(function (k) { keys.push(['s', k]); });
+    SPRITES.preload(keys);
+  }
 }
 
 function unlockAudioOnce() {

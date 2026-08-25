@@ -367,6 +367,8 @@ class AlliedSoldier {
   draw(ctx) {
     if (!this.alive) return;
     var r = 8;
+    // sprite oficial del soldado
+    if (typeof SPRITES !== 'undefined' && SPRITES.draw(ctx, 's', this.stype, this.x, this.y + 10, 30, this.flash > 0 ? 1 : 0, null)) return;
 
     // sombra en el suelo
     ctx.globalAlpha = 0.25;
@@ -1234,8 +1236,13 @@ class Tower {
     ctx.fillStyle = 'rgba(255,255,255,0.12)';
     ctx.fillRect(-19, 9, 4, 5.5);
     ctx.fillRect(15, 9, 4, 5.5);
+    // sprite oficial de la torre: sustituye cuerpo y arma procedural
+    if (typeof SPRITES !== 'undefined' && SPRITES.draw(ctx, 't', this.type, 0, 16, 52, 0, null)) {
+      // (el emblema y las gemas de nivel ya se dibujaron antes del arma)
+    } else {
     // cuerpo arquitectónico según el tipo
     this._body(ctx, game);
+    }
     var bodyH = 27 + lv * 4;
     var hw = 16 + lv * 2;
     // cornisa de sombra superior
@@ -1295,7 +1302,7 @@ class Tower {
       warlock: this.drawWarlock,
       barracks: this.drawBarracks
     }[this.type];
-    if (drawFn) {
+    if (drawFn && !(typeof SPRITES !== 'undefined' && SPRITES.has('t', this.type))) {
       var ws = 1 + lv * 0.14;
       ctx.save();
       ctx.scale(ws, ws);
