@@ -316,9 +316,159 @@ var ART = (function () {
   // Dibuja una criatura humanoide completa.
   // spec: colores y accesorios. st: {r, walk, atk, anim, freeze, flying, flap, enraged, ghost}
   // ============================================================
-  //  ARQUETIPOS CORPORALES — cada criatura con silueta y marcha
-  //  propias. 'warrior' replica el comportamiento clásico.
+  //  FX TEMÁTICOS — efectos de estado que nacen del mundo
   // ============================================================
+
+  // Hoja pequeña apuntando en ang.
+  function leaf(c, x, y, ang, size, col, dark) {
+    c.save();
+    c.translate(x, y); c.rotate(ang);
+    c.fillStyle = col;
+    c.beginPath();
+    c.moveTo(0, 0);
+    c.quadraticCurveTo(size * 0.5, -size * 0.4, size, 0);
+    c.quadraticCurveTo(size * 0.5, size * 0.3, 0, 0);
+    c.closePath(); c.fill();
+    c.strokeStyle = rgba(dark, 0.7); c.lineWidth = 0.6;
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(size * 0.85, 0); c.stroke();
+    c.restore();
+  }
+
+  // Enredadera que crece de (x1,y1) a (x2,y2) con curva orgánica.
+  // grow ∈ [0,1]; seed fija la forma; sway la mece al terminar.
+  function vine(c, x1, y1, x2, y2, grow, seed, sway, col, dark, thick) {
+    var mx = (x1 + x2) / 2 + Math.sin(seed * 12.9) * (y2 - y1) * 0.35;
+    var my = (y1 + y2) / 2 + Math.cos(seed * 7.3) * (x2 - x1) * 0.2;
+    var gx1 = x1 + (mx - x1) * grow, gy1 = y1 + (my - y1) * grow;
+    var gx2 = gx1 + (x2 - mx) * grow, gy2 = gy1 + (y2 - my) * grow;
+    c.strokeStyle = dark; c.lineCap = 'round';
+    c.lineWidth = thick + 1.1;
+    c.beginPath(); c.moveTo(x1, y1); c.quadraticCurveTo(gx1, gy1, gx2, gy2); c.stroke();
+    c.strokeStyle = col;
+    c.lineWidth = thick;
+    c.beginPath(); c.moveTo(x1, y1); c.quadraticCurveTo(gx1, gy1, gx2, gy2); c.stroke();
+    // hojas a lo largo (aparecen según crece)
+    for (var li = 0; li < 3; li++) {
+      var lp = 0.3 + li * 0.25;
+      if (grow > lp) {
+        var lx = x1 + (x2 - x1) * lp + (mx - (x1 + x2) / 2) * Math.sin(Math.PI * lp);
+        var ly = y1 + (y2 - y1) * lp + (my - (y1 + y2) / 2) * Math.sin(Math.PI * lp);
+        var la = Math.atan2(gy2 - gy1, gx2 - gx1) + (li % 2 ? 1.2 : -1.2) + sway * 0.4 + Math.sin(seed + li * 2) * 0.5;
+        leaf(c, lx, ly, la, thick * 2.6 * Math.min(1, (grow - lp) / 0.15), col, dark);
+      }
+    }
+  }
+
+  // Raíz serpenteante a ras de suelo.
+  function groundRoot(c, x, y, ang, len, grow, seed, col, dark, thick) {
+    var px = x, py = y;
+    c.strokeStyle = dark; c.lineCap = 'round';
+    c.lineWidth = thick + 1;
+    c.beginPath(); c.moveTo(px, py);
+    var pts = [];
+    for (var s = 0; s < 3; s++) {
+      var seg = len * (s + 1) / 3 * grow;
+      var aa = ang + Math.sin(seed * 3.1 + s * 2.4) * 0.7;
+      px = x + Math.cos(aa) * seg;
+      py = y + Math.sin(aa) * seg * 0.35;
+      pts.push([px, py, aa]);
+      c.lineTo(px, py);
+    }
+    c.stroke();
+    c.strokeStyle = col; c.lineWidth = thick;
+    c.beginPath(); c.moveTo(x, y);
+    for (var p2 = 0; p2 < pts.length; p2++) c.lineTo(pts[p2][0], pts[p2][1]);
+    c.stroke();
+  }
+
+  // Llama orgánica de dos capas con vaivén irregular.
+  function flame(c, x, y, w, h, t, seed) {
+    var fl = Math.sin(t * 11 + seed) * 0.16 + Math.sin(t * 5.3 + seed * 2) * 0.1;
+    var lean = Math.sin(t * 3.7 + seed) * w * 0.22;
+    // exterior naranja
+    c.fillStyle = 'rgba(255,110,26,0.85)';
+    c.beginPath();
+    c.moveTo(x - w / 2, y);
+    c.quadraticCurveTo(x - w * 0.62 + lean * 0.5, y - h * 0.45, x + lean * 0.8, y - h * (0.92 + fl * 0.3));
+    c.quadraticCurveTo(x + w * 0.62 + lean * 0.5, y - h * 0.45, x + w / 2, y);
+    c.closePath(); c.fill();
+    // interior amarillo
+    c.fillStyle = 'rgba(255,208,84,0.95)';
+    c.beginPath();
+    c.moveTo(x - w * 0.28, y);
+    c.quadraticCurveTo(x - w * 0.3 + lean * 0.4, y - h * 0.3, x + lean * 0.5, y - h * (0.55 + fl * 0.2));
+    c.quadraticCurveTo(x + w * 0.3 + lean * 0.4, y - h * 0.3, x + w * 0.28, y);
+    c.closePath(); c.fill();
+    // núcleo claro
+    c.fillStyle = 'rgba(255,244,200,0.9)';
+    c.beginPath(); c.ellipse(x + lean * 0.25, y - h * 0.14, w * 0.12, h * 0.2, 0, 0, 6.28); c.fill();
+  }
+
+  // Cristal de hielo anguloso que crece.
+  function iceShard(c, x, y, size, grow, seed) {
+    if (grow <= 0) return;
+    var s = size * Math.min(1, grow);
+    var rot = seed % 6.28;
+    c.save();
+    c.translate(x, y); c.rotate(rot);
+    var g = c.createLinearGradient(0, -s, 0, s);
+    g.addColorStop(0, 'rgba(235,250,255,0.95)');
+    g.addColorStop(0.5, 'rgba(170,220,250,0.85)');
+    g.addColorStop(1, 'rgba(110,170,220,0.8)');
+    c.fillStyle = g;
+    c.strokeStyle = 'rgba(230,248,255,0.9)'; c.lineWidth = 0.8;
+    c.beginPath();
+    c.moveTo(0, -s);
+    c.lineTo(s * 0.38, -s * 0.25);
+    c.lineTo(s * 0.26, s * 0.7);
+    c.lineTo(-s * 0.26, s * 0.7);
+    c.lineTo(-s * 0.38, -s * 0.25);
+    c.closePath(); c.fill(); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 0.6;
+    c.beginPath(); c.moveTo(0, -s * 0.9); c.lineTo(0, s * 0.55); c.stroke();
+    c.restore();
+  }
+
+  // Destello de 4 puntas.
+  function star4(c, x, y, s, col) {
+    c.fillStyle = col;
+    c.beginPath();
+    c.moveTo(x, y - s);
+    c.quadraticCurveTo(x + s * 0.16, y - s * 0.16, x + s, y);
+    c.quadraticCurveTo(x + s * 0.16, y + s * 0.16, x, y + s);
+    c.quadraticCurveTo(x - s * 0.16, y + s * 0.16, x - s, y);
+    c.quadraticCurveTo(x - s * 0.16, y - s * 0.16, x, y - s);
+    c.closePath(); c.fill();
+  }
+
+  // Burbuja tóxica que sube y estalla.
+  function toxinBubble(c, x, y, r, phase, col) {
+    var a = Math.max(0, 1 - phase);
+    c.strokeStyle = 'rgba(140,220,90,' + (a * 0.8).toFixed(3) + ')';
+    c.lineWidth = 1;
+    c.beginPath(); c.arc(x, y, r * (0.5 + phase * 0.6), 0, 6.28); c.stroke();
+    c.fillStyle = 'rgba(170,240,110,' + (a * 0.5).toFixed(3) + ')';
+    c.beginPath(); c.arc(x, y, r * 0.4 * (1 - phase * 0.4), 0, 6.28); c.fill();
+    c.fillStyle = col || 'rgba(210,255,160,' + (a * 0.9).toFixed(3) + ')';
+    c.beginPath(); c.arc(x - r * 0.25, y - r * 0.25, r * 0.16, 0, 6.28); c.fill();
+  }
+
+  // Runa arcanita de 3 trazos (determinista por seed).
+  function rune(c, x, y, s, seed, col, alpha) {
+    c.strokeStyle = col; c.globalAlpha *= alpha;
+    c.lineWidth = Math.max(1, s * 0.14); c.lineCap = 'round';
+    var v = Math.floor(seed) % 4;
+    c.beginPath();
+    if (v === 0) { c.moveTo(x - s, y + s * 0.6); c.lineTo(x, y - s); c.lineTo(x + s, y + s * 0.6); c.moveTo(x - s * 0.5, y + s * 0.1); c.lineTo(x + s * 0.5, y + s * 0.1); }
+    else if (v === 1) { c.moveTo(x, y - s); c.lineTo(x, y + s); c.moveTo(x - s * 0.7, y - s * 0.3); c.lineTo(x + s * 0.7, y + s * 0.3); }
+    else if (v === 2) { c.moveTo(x - s, y - s * 0.7); c.lineTo(x + s, y - s * 0.7); c.lineTo(x - s, y + s * 0.7); c.lineTo(x + s, y + s * 0.7); }
+    else { c.moveTo(x - s, y); c.lineTo(x, y - s); c.lineTo(x + s, y); c.lineTo(x, y + s); c.closePath(); }
+    c.stroke();
+    c.globalAlpha /= alpha;
+  }
+
+  // ============================================================
+  //  ARQUETIPOS CORPORALES — cada criatura con silueta y marcha
   var BUILDS = {
     warrior: { legs: 'full', legL: 1, headR: 1, torso: 1, bodyW: 1, armW: 1, bob: 1, freq: 1, lean: 1, hunch: 0, bounce: false, death: null },
     imp:     { legs: 'full', legL: 0.52, headR: 1.55, torso: 0.82, bodyW: 1.18, armW: 0.9, bob: 2.1, freq: 1.55, lean: 1.6, hunch: 0.06, bounce: true, death: 'pop' },
@@ -1441,6 +1591,14 @@ var ART = (function () {
     tail: tail,
     hump: hump,
     spikeRidge: spikeRidge,
+    leaf: leaf,
+    vine: vine,
+    groundRoot: groundRoot,
+    flame: flame,
+    iceShard: iceShard,
+    star4: star4,
+    toxinBubble: toxinBubble,
+    rune: rune,
     BUILDS: BUILDS
   };
 })();

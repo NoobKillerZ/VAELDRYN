@@ -41,6 +41,7 @@ class Enemy {
     this.walkPhase = Math.random() * 6.28;
     this.spawnT = 0;
     this._stepCycle = -1;
+    this.fxSeed = Math.random() * 1000;
     this.wobbleS = 0;
     this.flash = 0;
     this.face = 1;
@@ -443,6 +444,8 @@ class Enemy {
     ctx.ellipse(this.x, this.y + this.r * 0.8, this.r * (this.flying ? 0.75 : 1.1), this.r * 0.3, 0, 0, 6.28);
     ctx.fill();
     ctx.restore();
+    // ---- capa de suelo: efectos que nacen del terreno (detrás del cuerpo) ----
+    if (!dying) this.drawGroundFx(ctx, y);
     var c = this.flash > 0 ? '#ffffff' : this.color;
     this.face = Math.cos(this.angle) >= 0 ? 1 : -1;
     var hitKick = this.flash > 0 ? (this.flash / 0.1) * 0.045 * this.face : 0;
@@ -541,64 +544,268 @@ class Enemy {
       ctx.fillText(this.mutation.icon, this.x, y - this.r - 11);
     }
     if (this.freeze) {
-      ctx.globalAlpha = 0.35;
-      ctx.fillStyle = '#bfe8ff';
-      ctx.beginPath(); ctx.arc(this.x, y, this.r + 4, 0, 6.28); ctx.fill();
-      ctx.globalAlpha = 0.2;
-      ctx.fillStyle = '#e8f6ff';
-      ctx.beginPath(); ctx.arc(this.x, y, this.r + 2, 0, 6.28); ctx.fill();
-      ctx.globalAlpha = 0.5;
-      ctx.strokeStyle = '#d0eeff';
-      ctx.lineWidth = 1;
-      for (var fi = 0; fi < 3; fi++) {
-        var fa = this.anim * 0.8 + fi * 2.09;
-        var fx = this.x + Math.cos(fa) * (this.r + 2);
-        var fy = y + Math.sin(fa) * (this.r + 2);
+      var fSrc = this.freeze.src || 'ice';
+      var fDur = this.freeze.dur || 2;
+      var fP = Math.max(0, Math.min(1, 1 - this.freeze.t / fDur)); // 0 recién aplicado → 1 acabando
+      if (fSrc === 'root') {
+        // ---- ENREDADERAS DEL DRUIDA ----
+        // crecimiento → sujeción con vaivén → liberación
+        var grow = Math.min(1, fP / 0.22);
+        var release = fP > 0.82 ? (fP - 0.82) / 0.18 : 0;
+        var sway = Math.sin(this.anim * 2.1 + this.fxSeed) * 0.35 * (1 - release);
+        var vCol = '#3f7a34', vDark = '#245020';
+        // enredaderas envolventes: suben por el cuerpo rodeándolo
+        for (var vv = 0; vv < 3; vv++) {
+          var vSeed = this.fxSeed + vv * 37.7;
+          var side = vv % 2 ? 1 : -1;
+          var baseX = this.x + side * this.r * 0.55;
+          var topY = y - this.r * (1.15 + (vv % 2) * 0.5);
+          var wrapX = this.x - side * this.r * (0.35 + (vv % 2) * 0.25);
+          ctx.globalAlpha = 1 - release * 0.9;
+          ART.vine(ctx, baseX, this.y + this.r * 0.85, wrapX + side * this.r * 0.15, topY,
+            Math.max(0.04, grow * (1 - release)), vSeed, sway, vCol, vDark, 2.1 - vv * 0.35);
+          // zarcillo que se enrolla sobre el hombro
+          if (grow > 0.75 && vv === 1) {
+            ART.vine(ctx, wrapX, topY, wrapX - side * this.r * 0.7, topY + this.r * 0.25,
+              (grow - 0.75) / 0.25 * (1 - release), vSeed + 5, sway, vCol, vDark, 1.4);
+          }
+        }
+        ctx.globalAlpha = 1;
+        if (release > 0) {
+          // hojas sueltas que caen al liberarse
+          for (var fl2 = 0; fl2 < 3; fl2++) {
+            var flp = (release * 1.4 + fl2 * 0.3) % 1;
+            ART.leaf(ctx, this.x + Math.sin(this.fxSeed + fl2 * 2) * this.r,
+              y - this.r + flp * this.r * 2.2, flp * 3 + fl2, 3.2 * (1 - flp * 0.5), vCol, vDark);
+          }
+        }
+      } else {
+        // ---- CONGELACIÓN POR HIELO ----
+        // escarcha + cristales que crecen sobre el cuerpo
+        var iceGrow = Math.min(1, fP / 0.18);
+        // vaho gélido a los pies
+        ctx.globalAlpha = 0.25 + 0.12 * Math.sin(this.anim * 3);
+        ctx.fillStyle = '#cfe8ff';
+        ctx.beginPath(); ctx.ellipse(this.x, this.y + this.r * 0.75, this.r * 1.15, this.r * 0.32, 0, 0, 6.28); ctx.fill();
+        // cristales sobre el cuerpo (posiciones deterministas)
+        for (var ic = 0; ic < 4; ic++) {
+          var ia = this.fxSeed * 1.7 + ic * 2.3;
+          var ix = this.x + Math.cos(ia) * this.r * 0.62;
+          var iy = y + Math.sin(ia) * this.r * 0.72 - this.r * 0.15;
+          ART.iceShard(ctx, ix, iy, this.r * (0.5 + (ic % 2) * 0.28), iceGrow * (0.7 + 0.3 * Math.sin(ic * 1.9 + this.anim * 0.7)), this.fxSeed + ic * 11);
+        }
+        // destello frío ocasional
+        var tw = Math.sin(this.anim * 2.4 + this.fxSeed);
+        if (tw > 0.86) ART.star4(ctx, this.x + Math.cos(this.fxSeed) * this.r * 0.7, y - this.r * 0.5, (tw - 0.86) * 26, 'rgba(235,250,255,0.95)');
+        ctx.globalAlpha = 1;
+      }
+    }
+    if (this.hex && this.hex.t > 0) {
+      // ---- MALEDICCIÓN DEL BRUJO ----
+      // hilillos violeta orbitando el cuerpo + runa sobre la cabeza
+      var hxP = this.anim * 1.6 + this.fxSeed;
+      for (var hw = 0; hw < 3; hw++) {
+        var ha = hxP + hw * 2.09;
+        var hwr = this.r + 5 + Math.sin(ha * 1.7) * 2.5;
+        var hwx = this.x + Math.cos(ha) * hwr;
+        var hwy = y + Math.sin(ha * 1.3) * this.r * 0.55 - this.r * 0.1;
+        var hTail = (ha + 0.9) % 6.28;
+        ctx.strokeStyle = 'rgba(176,138,255,' + (0.55 - hw * 0.12).toFixed(2) + ')';
+        ctx.lineWidth = 1.6 - hw * 0.3; ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(fx - 2, fy - 2); ctx.lineTo(fx + 2, fy + 2);
-        ctx.moveTo(fx + 2, fy - 2); ctx.lineTo(fx - 2, fy + 2);
+        ctx.moveTo(this.x + Math.cos(hTail) * hwr, y + Math.sin(hTail * 1.3) * this.r * 0.55 - this.r * 0.1);
+        ctx.quadraticCurveTo(
+          this.x + Math.cos((ha + hTail) / 2) * (hwr + 4), y - this.r * 0.4,
+          hwx, hwy);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(210,170,255,0.9)';
+        ctx.beginPath(); ctx.arc(hwx, hwy, 1.5, 0, 6.28); ctx.fill();
+      }
+      // runa parpadeante
+      var runeA = 0.45 + 0.4 * Math.sin(this.anim * 4 + this.fxSeed);
+      ctx.save();
+      ART.rune(ctx, this.x, y - this.r - 12, 5.5, this.fxSeed, '#c8a0ff', Math.max(0.15, runeA));
+      ctx.restore();
+      // volutas oscuras en los pies
+      ctx.globalAlpha = 0.3 + 0.15 * Math.sin(this.anim * 3);
+      ctx.fillStyle = '#3a2a6a';
+      ctx.beginPath(); ctx.ellipse(this.x, this.y + this.r * 0.8, this.r * 0.95, this.r * 0.26, 0, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    if (this.burn) {
+      // ---- INCENDIO ----
+      // llamas en capas ancladas al cuerpo + chispas + humo
+      var bFl = 0.75 + 0.25 * Math.sin(this.anim * 2.3 + this.fxSeed);
+      // resplandor en el suelo
+      ctx.globalAlpha = 0.16 * bFl;
+      ctx.fillStyle = '#ff7a30';
+      ctx.beginPath(); ctx.ellipse(this.x, this.y + this.r * 0.85, this.r * 1.25, this.r * 0.34, 0, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = 1;
+      // llamas ancladas: flanco, cabeza y flanco opuesto
+      ART.flame(ctx, this.x - this.r * 0.55, y - this.r * 0.15, this.r * 0.75, this.r * 1.15 * bFl, this.anim, this.fxSeed);
+      ART.flame(ctx, this.x + this.r * 0.5, y - this.r * 0.3, this.r * 0.7, this.r * 1.0 * bFl, this.anim + 1.7, this.fxSeed + 3);
+      ART.flame(ctx, this.x + Math.sin(this.fxSeed) * this.r * 0.2, y - this.r * 1.15, this.r * 0.85, this.r * 1.3 * bFl, this.anim + 3.1, this.fxSeed + 7);
+      // chispas ascendentes (2 deterministas)
+      for (var bk = 0; bk < 2; bk++) {
+        var bp3 = ((this.anim * 0.9 + this.fxSeed * 0.13 + bk * 0.5) % 1);
+        ctx.globalAlpha = (1 - bp3) * 0.85;
+        ctx.fillStyle = bk % 2 ? '#ffca6a' : '#ff8a3a';
+        ctx.beginPath();
+        ctx.arc(this.x + Math.sin(this.fxSeed + bk * 4 + this.anim) * this.r * 0.5, y - this.r - bp3 * this.r * 1.8, 1.4 - bp3 * 0.7, 0, 6.28);
+        ctx.fill();
+      }
+      // humillo
+      ctx.globalAlpha = 0.14 * bFl;
+      ctx.fillStyle = '#5a5048';
+      ctx.beginPath();
+      ctx.arc(this.x + Math.sin(this.anim * 1.4 + this.fxSeed) * this.r * 0.3, y - this.r * 2.1, this.r * 0.5, 0, 6.28);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    if (this.poison) {
+      // ---- ENVENENAMIENTO ----
+      // burbujas tóxicas que emanan del cuerpo + goteo + aura verdosa
+      var pnP = this.poison.t % 1.4 / 1.4;
+      // aura enfermiza sutil sobre el cuerpo
+      ctx.globalAlpha = 0.1 + 0.06 * Math.sin(this.anim * 4 + this.fxSeed);
+      ctx.fillStyle = '#7ac83a';
+      ctx.beginPath(); ctx.arc(this.x, y - this.r * 0.2, this.r * 0.95, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = 1;
+      // tres burbujeras que suben por el contorno
+      for (var tb = 0; tb < 3; tb++) {
+        var tbP = ((pnP + tb * 0.33 + this.fxSeed * 0.017) % 1);
+        var tbX = this.x + Math.sin(this.fxSeed + tb * 2.6) * this.r * 0.6;
+        var tbY = y + this.r * 0.4 - tbP * this.r * 1.7;
+        ART.toxinBubble(ctx, tbX, tbY, 2.4 + (tb % 2), tbP, null);
+      }
+      // gota que cae al suelo ocasionalmente
+      var drip = (this.anim * 0.5 + this.fxSeed * 0.05) % 2;
+      if (drip < 0.5) {
+        ctx.globalAlpha = 0.8 - drip * 1.4;
+        ctx.fillStyle = '#8adf4a';
+        ctx.beginPath();
+        ctx.arc(this.x + Math.sin(this.fxSeed * 2) * this.r * 0.5, y + this.r * 0.5 + drip * this.r * 1.2, 1.6, 0, 6.28);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+    if (this.slow && this.slow.t > 0) {
+      // ---- RALENTIZACIÓN ----
+      // estela plateada de escarcha que queda atrás al avanzar
+      for (var sl3 = 1; sl3 <= 3; sl3++) {
+        var slA = (0.4 - sl3 * 0.11) * (this.slow.mult < 0.6 ? 1.3 : 1);
+        if (slA <= 0) continue;
+        ctx.globalAlpha = slA;
+        ctx.fillStyle = '#bfe0f5';
+        ctx.beginPath();
+        ctx.arc(this.x - this.face * sl3 * this.r * 0.42, y + this.r * 0.55 - sl3 * 1.2, this.r * (0.3 - sl3 * 0.06), 0, 6.28);
+        ctx.fill();
+      }
+      // brillo gélido intermitente en el cuerpo
+      ctx.globalAlpha = 0.08 + 0.05 * Math.sin(this.anim * 5 + this.fxSeed);
+      ctx.fillStyle = '#a8d4f0';
+      ctx.beginPath(); ctx.arc(this.x, y - this.r * 0.2, this.r * 0.9, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    if (this.buffed > 1) {
+      // ---- APRESURAMIENTO ----
+      // ráfagas de viento a la espalda
+      for (var wf = 0; wf < 2; wf++) {
+        var wPh = ((this.anim * 1.8 + wf * 0.5) % 1);
+        ctx.globalAlpha = (1 - wPh) * 0.5;
+        ctx.strokeStyle = '#ffd9a0'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(this.x - this.face * (this.r * 0.8 + wPh * this.r * 1.4), y - this.r * 0.5 + wf * this.r * 0.7 - 2);
+        ctx.quadraticCurveTo(
+          this.x - this.face * (this.r * 1.3 + wPh * this.r * 1.4), y - this.r * 0.2 + wf * this.r * 0.7,
+          this.x - this.face * (this.r * 1.8 + wPh * this.r * 1.4), y - this.r * 0.6 + wf * this.r * 0.7);
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('❄', this.x, y - this.r - 6);
     }
-    if (this.hex && this.hex.t > 0) {
-      var hAlpha = 0.35 + 0.25 * Math.sin(this.anim * 5);
-      ctx.globalAlpha = hAlpha * 0.5;
-      ctx.fillStyle = '#8060c0';
-      ctx.beginPath(); ctx.arc(this.x, y, this.r + 4, 0, 6.28); ctx.fill();
-      ctx.globalAlpha = hAlpha;
-      ctx.strokeStyle = '#b08aff';
-      ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.arc(this.x, y, this.r + 5 + Math.sin(this.anim * 3) * 1.5, 0, 6.28); ctx.stroke();
-      ctx.strokeStyle = 'rgba(200,160,255,0.4)';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.arc(this.x, y, this.r + 8 + Math.sin(this.anim * 2) * 2, 0, 6.28); ctx.stroke();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#c8a0ff';
-      ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('🌀', this.x, y - this.r - 6);
-    }
-    if (this.burn) {
-      var bFl = 0.6 + 0.4 * Math.sin(this.anim * 2);
-      for (var bi = 0; bi < 3; bi++) {
-        var ba = this.anim * 4 + bi * 2.09;
-        var bx = this.x + Math.sin(ba) * this.r * 0.4;
-        var by2 = y - this.r - bi * 3;
-        var bs = (4 - bi) * bFl;
-        ctx.globalAlpha = (0.7 - bi * 0.15) * bFl;
-        ctx.fillStyle = bi === 0 ? '#ff7a30' : '#ffaa40';
-        ctx.beginPath(); ctx.arc(bx, by2, bs, 0, 6.28); ctx.fill();
+    if (this.enraged) {
+      // ---- FURIA ----
+      // vapor de los hombros + brasas, en lugar de aro rojo
+      var enP = 0.5 + 0.5 * Math.sin(this.anim * 6);
+      for (var es = 0; es < 2; es++) {
+        var esX = this.x + (es ? 1 : -1) * this.r * 0.6;
+        var esP = ((this.anim * 1.1 + es * 0.5) % 1);
+        ctx.globalAlpha = (1 - esP) * 0.5;
+        ctx.fillStyle = '#ff5a3a';
+        ctx.beginPath(); ctx.arc(esX + Math.sin(esP * 5 + es) * 2, y - this.r * 0.9 - esP * this.r, 2.2 - esP, 0, 6.28); ctx.fill();
       }
-      ctx.globalAlpha = 0.4 * bFl;
-      ctx.fillStyle = '#ffcc60';
-      ctx.beginPath(); ctx.arc(this.x, y - this.r, 2, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = 0.1 + enP * 0.08;
+      ctx.fillStyle = '#ff3a2a';
+      ctx.beginPath(); ctx.arc(this.x, y - this.r * 0.1, this.r * 1.05, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    if (this.healAura) {
+      // ---- SANADOR ----
+      // motos de energía verde ascendiendo en espiral suave
+      for (var hm = 0; hm < 3; hm++) {
+        var hmP = ((this.anim * 0.7 + hm * 0.33) % 1);
+        var hmAng = hmP * 4.5 + hm * 2.09 + this.fxSeed;
+        ctx.globalAlpha = (1 - hmP) * 0.85;
+        ctx.fillStyle = '#7aff9a';
+        ctx.beginPath();
+        ctx.arc(this.x + Math.cos(hmAng) * this.r * (0.9 - hmP * 0.5), y + this.r * 0.6 - hmP * this.r * 1.9, 1.7 - hmP, 0, 6.28);
+        ctx.fill();
+      }
+      // cruz sanitaria discreta dibujada (no emoji)
+      ctx.globalAlpha = 0.55 + 0.3 * Math.sin(this.anim * 3);
+      ctx.strokeStyle = '#7aff9a'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(this.x - 3.5, y - this.r - 10); ctx.lineTo(this.x + 3.5, y - this.r - 10);
+      ctx.moveTo(this.x, y - this.r - 13.5); ctx.lineTo(this.x, y - this.r - 6.5);
+      ctx.stroke();
       ctx.globalAlpha = 1;
     }
     this.drawHpBar(ctx, y);
     this.drawResistBadges(ctx, y);
+  }
+
+  // Efectos de estado que nacen del terreno (se dibujan DETRÁS del cuerpo)
+  drawGroundFx(ctx, y) {
+    var gy = this.y + this.r * 0.85;
+    // raíces del druida extendiéndose por el suelo
+    if (this.freeze && this.freeze.src === 'root') {
+      var fDur2 = this.freeze.dur || 2;
+      var fP2 = Math.max(0, Math.min(1, 1 - this.freeze.t / fDur2));
+      var grow2 = Math.min(1, fP2 / 0.22);
+      var release2 = fP2 > 0.82 ? (fP2 - 0.82) / 0.18 : 0;
+      for (var gr = 0; gr < 4; gr++) {
+        var ga = (gr / 4) * 6.28 + this.fxSeed * 0.13 + Math.sin(this.anim * 1.5 + gr) * 0.06 * (1 - release2);
+        ctx.globalAlpha = (1 - release2) * 0.9;
+        ART.groundRoot(ctx, this.x, gy, ga, this.r * (1.5 + (gr % 2) * 0.8),
+          Math.max(0.05, grow2), this.fxSeed + gr * 7, '#3f7a34', '#245020', 2.4 - gr * 0.25);
+      }
+      ctx.globalAlpha = 1;
+      // brote central que empuja la tierra
+      if (grow2 > 0.3 && release2 < 1) {
+        ctx.globalAlpha = (1 - release2) * 0.8;
+        ctx.fillStyle = '#4a8a3a';
+        ctx.beginPath();
+        ctx.ellipse(this.x, gy - grow2 * 2, 2.2, grow2 * 3.2, 0, 0, 6.28);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+    // charco tóxico bajo enemigos envenenados
+    if (this.poison) {
+      var puA = 0.16 + 0.05 * Math.sin(this.anim * 3 + this.fxSeed);
+      ctx.globalAlpha = puA;
+      ctx.fillStyle = '#5a9a2a';
+      ctx.beginPath();
+      ctx.ellipse(this.x, gy + 2, this.r * 1.15, this.r * 0.34, 0, 0, 6.28);
+      ctx.fill();
+      // ribete burbujeante
+      ctx.globalAlpha = puA + 0.08;
+      ctx.strokeStyle = '#8adf4a';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(this.x, gy + 2, this.r * 1.15, this.r * 0.34, 0, 0.3, 2.2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    // resplandor de fuego ya está en el overlay (anclado al cuerpo)
   }
 
   drawBody(ctx, y, c) {

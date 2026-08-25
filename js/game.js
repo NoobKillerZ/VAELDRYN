@@ -42,6 +42,8 @@ class Game {
     // Juice: sacudida de pantalla y micro-pausa por impactos fuertes
     this.shake = 0;
     this.hitstop = 0;
+    this.stormFlash = 0;
+    this._adaptNotified = false;
     // Prioridad de tiro por torre ('first' | 'strong' | 'close')
     this.priorityNames = { first: '🎯 Primero', strong: '💪 Más fuerte', close: '📍 Más cerca' };
     this.continueEndless = false;
@@ -285,6 +287,7 @@ class Game {
       this.burst(victim.x, victim.y, '#8ad4ff', 10);
       this.texts.push({ x: victim.x, y: victim.y - 20, txt: '⚡', life: 0.6, max: 0.6, color: '#8ad4ff', vy: -20, size: 14 });
       sfx('weather_lightning_strike', 0.6);
+      this.stormFlash = 0.6;
     }
     this.applyBuffAuras();
     for (var i = 0; i < this.enemies.length; i++) this.enemies[i].update(dt, this);
@@ -1039,6 +1042,7 @@ class Game {
 
   updateEffects(dt) {
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 22);
+    if (this.stormFlash > 0) this.stormFlash = Math.max(0, this.stormFlash - dt * 2.2);
     var i;
     for (i = this.lightning.length - 1; i >= 0; i--) {
       var lb = this.lightning[i];
@@ -1169,6 +1173,86 @@ class Game {
     vg.addColorStop(1, 'rgba(0,0,0,0.42)');
     c.fillStyle = vg;
     c.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+    // props ambientales animables (hierba que se mece, hojas, brasas...)
+    this.bakeAmbient();
+  }
+
+  // Prepara los elementos ambientales animados según el bioma.
+  // Posiciones deterministas fuera del camino para no ensuciar el combate.
+  bakeAmbient() {
+    var th = this.map.theme;
+    var A = [];
+    var hash2b = function (a, b) { var s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+    var counts = { tuft: 16, leaf: 6, mote: 9, mist: 3 };
+    var moteCol = { plains: 'rgba(255,240,180,0.5)', desert: 'rgba(230,200,140,0.55)', forest: 'rgba(200,255,140,0.4)', frozen: 'rgba(220,240,255,0.6)', void: 'rgba(180,120,255,0.5)' }[th] || 'rgba(255,255,255,0.4)';
+    for (var i = 0; i < counts.tuft; i++) {
+      var tx = hash2b(i, 3) * CONFIG.WIDTH, ty = hash2b(i, 7) * CONFIG.HEIGHT;
+      if (this.isPathCell(Math.floor(tx / CONFIG.CELL), Math.floor(ty / CONFIG.CELL))) continue;
+      A.push({ t: 'tuft', x: tx, y: ty, p: hash2b(i, 11) * 6.28, s: 0.7 + hash2b(i, 13) * 0.7 });
+    }
+    for (var l = 0; l < counts.leaf; l++) {
+      A.push({ t: 'leaf', x: hash2b(l, 21) * CONFIG.WIDTH, y: hash2b(l, 23) * CONFIG.HEIGHT, p: hash2b(l, 29) * 6.28, s: 0.8 + hash2b(l, 31) * 0.5 });
+    }
+    for (var m = 0; m < counts.mote; m++) {
+      A.push({ t: 'mote', x: hash2b(m, 41) * CONFIG.WIDTH, y: hash2b(m, 43) * CONFIG.HEIGHT, p: hash2b(m, 47) * 6.28, s: 0.6 + hash2b(m, 53), col: moteCol });
+    }
+    for (var mi = 0; mi < counts.mist; mi++) {
+      A.push({ t: 'mist', x: hash2b(mi, 61) * CONFIG.WIDTH, y: (0.2 + hash2b(mi, 63) * 0.6) * CONFIG.HEIGHT, p: hash2b(mi, 67) * 6.28, s: 60 + hash2b(mi, 71) * 60 });
+    }
+    this.ambient = A;
+  }
+
+  // Dibuja la capa ambiental viva (sutil: el protagonismo es del combate)
+  drawAmbient(ctx) {
+    if (!this.ambient) return;
+    var t = this.time;
+    var th = this.map.theme;
+    for (var i = 0; i < this.ambient.length; i++) {
+      var a = this.ambient[i];
+      if (a.t === 'tuft') {
+        var sway = Math.sin(t * 1.4 + a.p) * 2.2 * a.s;
+        ctx.strokeStyle = 'rgba(120,180,80,0.4)';
+        ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+        for (var b = -1; b <= 1; b++) {
+          ctx.beginPath();
+          ctx.moveTo(a.x + b * 2.2 * a.s, a.y);
+          ctx.quadraticCurveTo(a.x + b * 2.6 * a.s + sway * 0.4, a.y - 3 * a.s, a.x + b * 3 * a.s + sway, a.y - 5.5 * a.s);
+          ctx.stroke();
+        }
+      } else if (a.t === 'leaf' && (th === 'forest' || th === 'plains')) {
+        var lp = ((t * 0.09 * a.s + a.p) % 1);
+        var ly = a.y + lp * CONFIG.HEIGHT * 0.9;
+        var lx = a.x + Math.sin(t * 0.9 + a.p + lp * 5) * 16;
+        ctx.globalAlpha = Math.sin(lp * Math.PI) * 0.55;
+        ART.leaf(ctx, lx, ly, lp * 5 + a.p, 3.4 * a.s, th === 'forest' ? '#7aa840' : '#a8b050', '#4a6a28');
+        ctx.globalAlpha = 1;
+      } else if (a.t === 'mote') {
+        var mp = ((t * 0.13 * a.s + a.p) % 1);
+        var mx = a.x + Math.sin(t * 0.5 + a.p) * 10;
+        var my = a.y - mp * 46;
+        ctx.globalAlpha = Math.sin(mp * Math.PI) * 0.5;
+        ctx.fillStyle = a.col;
+        ctx.beginPath(); ctx.arc(mx, my, 1.3 * a.s, 0, 6.28); ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (a.t === 'mist' && (th === 'frozen' || th === 'void')) {
+        var mxp = ((t * 0.02 + a.p) % 1);
+        var mpx = -a.s + mxp * (CONFIG.WIDTH + a.s * 2);
+        var mg = ctx.createRadialGradient(mpx, a.y, 4, mpx, a.y, a.s);
+        mg.addColorStop(0, th === 'frozen' ? 'rgba(220,240,255,0.09)' : 'rgba(150,90,220,0.10)');
+        mg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = mg;
+        ctx.beginPath(); ctx.ellipse(mpx, a.y, a.s, a.s * 0.32, 0, 0, 6.28); ctx.fill();
+      }
+    }
+    // penumbra de tormenta + destello del relámpago
+    if (typeof WEATHER !== 'undefined' && WEATHER.fx && WEATHER.fx.lightning) {
+      ctx.fillStyle = 'rgba(30,45,80,0.12)';
+      ctx.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+      if (this.stormFlash > 0) {
+        ctx.fillStyle = 'rgba(230,240,255,' + (this.stormFlash * 0.35).toFixed(3) + ')';
+        ctx.fillRect(0, 0, CONFIG.WIDTH, CONFIG.HEIGHT);
+      }
+    }
   }
 
   drawPortal(c) {
@@ -1552,6 +1636,8 @@ class Game {
       ctx.fillRect(-24, -24, CONFIG.WIDTH + 48, CONFIG.HEIGHT + 48);
     }
     ctx.drawImage(this.bg, 0, 0);
+    // capa ambiental viva (bajo las unidades)
+    this.drawAmbient(ctx);
 
     // portal y castillo (animados por frame)
     this.drawPortal(ctx);

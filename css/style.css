@@ -116,6 +116,21 @@ body {
 }
 #director-panel h3 { color: #b99ad0; border-color: #4a2a5a; }
 #director-panel b { color: #d8b0f0; }
+.dir-bars { display: flex; flex-direction: column; gap: 3px; margin: 7px 0; }
+.dir-bar { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+.dir-el { width: 16px; text-align: center; flex-shrink: 0; }
+.dir-track { flex: 1; height: 6px; background: rgba(0,0,0,0.4); border-radius: 3px; overflow: hidden; border: 1px solid rgba(90,60,130,0.5); }
+.dir-fill { display: block; height: 100%; border-radius: 3px; transition: width .3s; }
+.dir-pct { width: 30px; text-align: right; color: #b99ad0; flex-shrink: 0; }
+.dir-adapt {
+  font-size: 10px; padding: 1px 8px; border-radius: 999px;
+  border: 1px solid #8a5aff; color: #d8b0f0; background: rgba(90,50,160,0.25);
+  animation: dirPulse 2s ease-in-out infinite;
+}
+@keyframes dirPulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; box-shadow: 0 0 8px rgba(160,110,255,0.5); }
+}
 .btn.on {
   border-color: #f2c86a; color: #2a1c08;
   background: linear-gradient(#f2c86a, #c79a3c); box-shadow: 0 0 10px rgba(255, 200, 90, .5);

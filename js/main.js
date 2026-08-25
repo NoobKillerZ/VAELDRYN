@@ -459,7 +459,22 @@ var UI = {
       var dl = directorLevelName[DIRECTOR.level] || '🟢 Relajado';
       var dom = DIRECTOR.dominantElement();
       var domTxt = dom ? (dom.element + ' ' + Math.round(dom.pct * 100) + '%') : '—';
-      dirInfo.innerHTML = 'Estado: <b>' + dl + '</b><br>Estrategia: <b>' + domTxt + '</b><br>Kills: <b>' + g.kills + '</b> · Fugas: <b>' + g.leaked + '</b>';
+      // gráfico de barras: reparto de daño por elemento
+      var EL_COL = { physical: '#c9ccd6', fire: '#ff8a4a', ice: '#8ad4ff', earth: '#c8a05a', nature: '#7ad47f', lightning: '#ffe86a', void: '#b08aff' };
+      var EL_ICO = { physical: '⚔️', fire: '🔥', ice: '❄️', earth: '⛰️', nature: '🌿', lightning: '⚡', void: '🌌' };
+      var br = DIRECTOR.elementBreakdown();
+      var bars = '';
+      for (var bi2 = 0; bi2 < br.length && bi2 < 5; bi2++) {
+        var be = br[bi2];
+        var wpct = Math.max(3, Math.round(be.pct * 100));
+        bars += '<div class="dir-bar"><span class="dir-el">' + (EL_ICO[be.element] || '') + '</span>' +
+          '<span class="dir-track"><span class="dir-fill" style="width:' + wpct + '%;background:' + (EL_COL[be.element] || '#999') + '"></span></span>' +
+          '<span class="dir-pct">' + wpct + '%</span></div>';
+      }
+      var adaptTxt = DIRECTOR.adapted ? '<span class="dir-adapt">🧠 adaptando</span>' : '';
+      dirInfo.innerHTML = 'Estado: <b>' + dl + '</b> ' + adaptTxt + '<br>Estrategia: <b>' + domTxt + '</b>' +
+        (bars ? '<div class="dir-bars">' + bars + '</div>' : '') +
+        'Kills: <b>' + g.kills + '</b> · Fugas: <b>' + g.leaked + '</b>';
     } else {
       dirInfo.textContent = '';
     }

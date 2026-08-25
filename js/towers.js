@@ -71,7 +71,7 @@ var ABILITY_FX = {
       var dx = e.x - t.x, dy = e.y - t.y;
       if (dx * dx + dy * dy <= r * r) {
         e.takeDamage(t.damage * 2 * g.weatherMult('ice'), 'ice', t);
-        if (e.alive) e.freeze = { t: Math.max(e.freeze ? e.freeze.t : 0, 1.2 + t.level * 0.3) };
+        if (e.alive) e.freeze = { t: Math.max(e.freeze ? e.freeze.t : 0, 1.2 + t.level * 0.3), dur: 1.2 + t.level * 0.3, src: "ice" };
       }
     }
     g.shockRing(t.x, t.y, r, '#bfe8ff', 0.55);
@@ -146,7 +146,7 @@ var ABILITY_FX = {
       var dx = e.x - t.x, dy = e.y - t.y;
       if (dx * dx + dy * dy <= r * r) {
         e.takeDamage(t.damage > 0 ? t.damage * 2.5 * g.weatherMult('nature') : 40, 'nature', t);
-        if (e.alive) e.freeze = { t: Math.max(e.freeze ? e.freeze.t : 0, 1.6 + t.level * 0.4) };
+        if (e.alive) e.freeze = { t: Math.max(e.freeze ? e.freeze.t : 0, 1.6 + t.level * 0.4), dur: 1.6 + t.level * 0.4, src: "ice" };
         g.burst(e.x, e.y, '#7fd47f', 4);
         n++;
       }
@@ -175,7 +175,7 @@ var ABILITY_FX = {
       var dx = e.x - t.x, dy = e.y - t.y;
       if (dx * dx + dy * dy <= r * r) {
         e.pathPos = Math.max(0, e.pathPos - 20);
-        e.freeze = { t: Math.max(e.freeze ? e.freeze.t : 0, 1.1) };
+        e.freeze = { t: Math.max(e.freeze ? e.freeze.t : 0, 1.1), dur: 1.1, src: "ice" };
         e.takeDamage(t.damage * 1.5 * g.weatherMult('physical'), 'physical', t);
         g.burst(e.x, e.y, '#ccccdd', 4);
       }
@@ -991,7 +991,7 @@ class Tower {
       if (!e.alive || e.flying) continue;
       var dx = e.x - this.x, dy = e.y - this.y;
       if (dx * dx + dy * dy <= this.range * this.range) {
-        e.freeze = { t: Math.max(e.freeze ? e.freeze.t : 0, this.rootDur) };
+        e.freeze = { t: Math.max(e.freeze ? e.freeze.t : 0, this.rootDur), dur: this.rootDur, src: "root" };
         rooted = true;
       }
     }
@@ -1028,7 +1028,7 @@ class Tower {
     if (best.alive) {
       best.pathPos = Math.max(0, best.pathPos - 6);
       if (this.level >= 2) best.slow = { mult: 0.7, t: 0.8 };
-      if (this.level >= 3) best.freeze = { t: Math.max(best.freeze ? best.freeze.t : 0, 0.3) };
+      if (this.level >= 3) best.freeze = { t: Math.max(best.freeze ? best.freeze.t : 0, 0.3), dur: 0.3, src: "ice" };
     }
   }
 

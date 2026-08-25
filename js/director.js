@@ -51,6 +51,20 @@ var DIRECTOR = {
     return { element: best, pct: bestPct };
   },
 
+  // Reparto de daño por elemento, ordenado de mayor a menor.
+  elementBreakdown: function () {
+    var d = this.stats.dmg;
+    var total = 0, k;
+    for (k in d) total += d[k];
+    if (total <= 0) return [];
+    var out = [];
+    for (k in d) {
+      if (d[k] > 0) out.push({ element: k, pct: d[k] / total, amount: d[k] });
+    }
+    out.sort(function (a, b) { return b.amount - a.amount; });
+    return out;
+  },
+
   elementCounter: function (element) {
     var map = {
       fire: ['fireGolem', 'treant'],
