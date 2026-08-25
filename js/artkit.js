@@ -1,9 +1,9 @@
-'use strict';
+﻿'use strict';
 
 // ============================================================
-//  ARTKIT — Motor de arte procedural 2D de VAELDRYN
+//  ARTKIT â€” Motor de arte procedural 2D de VAELDRYN
 //  Figuras humanoides animadas, bestias, jefes, armas y
-//  elementos orgánicos reutilizables.
+//  elementos orgÃ¡nicos reutilizables.
 // ============================================================
 
 var ART = (function () {
@@ -36,9 +36,9 @@ var ART = (function () {
     return 'rgb(' + Math.round(ca[0] + (cb[0] - ca[0]) * t) + ',' + Math.round(ca[1] + (cb[1] - ca[1]) * t) + ',' + Math.round(ca[2] + (cb[2] - ca[2]) * t) + ')';
   }
 
-  // ---- Primitivas orgánicas ------------------------------------
+  // ---- Primitivas orgÃ¡nicas ------------------------------------
 
-  // Segmento de extremidad con articulación (hueso → nudillo).
+  // Segmento de extremidad con articulaciÃ³n (hueso â†’ nudillo).
   function limb(c, x1, y1, x2, y2, x3, y3, w, col, dark) {
     c.strokeStyle = dark; c.lineCap = 'round'; c.lineJoin = 'round';
     c.lineWidth = w + 1.4;
@@ -50,7 +50,7 @@ var ART = (function () {
     c.beginPath(); c.arc(x2, y2, w * 0.62, 0, 6.28); c.fill();
   }
 
-  // Línea simple redondeada con sombreado inferior.
+  // LÃ­nea simple redondeada con sombreado inferior.
   function rod(c, x1, y1, x2, y2, w, col, dark) {
     c.strokeStyle = dark; c.lineCap = 'round';
     c.lineWidth = w + 1.2;
@@ -60,7 +60,7 @@ var ART = (function () {
     c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
   }
 
-  // Segmento de extremidad cónico: raíz gruesa → extremo fino,
+  // Segmento de extremidad cÃ³nico: raÃ­z gruesa â†’ extremo fino,
   // con contorno oscuro e interior con sombreado de perfil.
   function taper(c, x1, y1, x2, y2, w1, w2, col, dark) {
     var dx = x2 - x1, dy = y2 - y1;
@@ -89,7 +89,7 @@ var ART = (function () {
     c.lineTo(x2 - nx * (h2 - 1), y2 - ny * (h2 - 1));
     c.lineTo(x1 - nx * (h1 - 1), y1 - ny * (h1 - 1));
     c.closePath(); c.fill();
-    // brillo de articulación
+    // brillo de articulaciÃ³n
     c.fillStyle = shade(col, 22);
     c.beginPath(); c.arc(x1 + nx * (h1 * 0.2), y1 + ny * (h1 * 0.2), Math.max(h1 * 0.5, 1.2), 0, 6.28); c.fill();
   }
@@ -114,16 +114,16 @@ var ART = (function () {
     }
   }
 
-  // Ala membranosa con brazo, dedos óseos y borde festoneado.
-  // flap ∈ [-1, 1]: bate la geometría completa del ala.
+  // Ala membranosa con brazo, dedos Ã³seos y borde festoneado.
+  // flap âˆˆ [-1, 1]: bate la geometrÃ­a completa del ala.
   function wing(c, x, y, dir, len, flap, col, dark) {
     c.save();
     c.translate(x, y);
     c.scale(dir, 1);
     var lift = flap * len * 0.26;
     // articulaciones del ala
-    var ex = len * 0.44, ey = -len * 0.46 - lift;            // codo (muñeca)
-    var t1x = len * 1.05, t1y = -len * 0.92 - lift * 1.5;    // dedo 1 — punta del ala
+    var ex = len * 0.44, ey = -len * 0.46 - lift;            // codo (muÃ±eca)
+    var t1x = len * 1.05, t1y = -len * 0.92 - lift * 1.5;    // dedo 1 â€” punta del ala
     var t2x = len * 1.0, t2y = -len * 0.34 - lift * 0.9;     // dedo 2
     var t3x = len * 0.82, t3y = len * 0.16 - lift * 0.35;    // dedo 3
     var bx = len * 0.1, by = len * 0.34;                     // anclaje inferior al cuerpo
@@ -142,7 +142,7 @@ var ART = (function () {
     c.quadraticCurveTo(len * 0.44, len * 0.34, bx, by);
     c.closePath(); c.fill();
     c.strokeStyle = rgba(dark, 0.85); c.lineWidth = Math.max(1, len * 0.032); c.lineJoin = 'round'; c.stroke();
-    // estrías radiales de la membrana
+    // estrÃ­as radiales de la membrana
     c.strokeStyle = rgba(dark, 0.32); c.lineWidth = Math.max(0.7, len * 0.018);
     c.beginPath(); c.moveTo(ex, ey); c.quadraticCurveTo(len * 0.62, -len * 0.4 - lift * 0.8, len * 0.88, -len * 0.38 - lift * 0.95); c.stroke();
     c.beginPath(); c.moveTo(ex, ey); c.quadraticCurveTo(len * 0.58, -len * 0.16 - lift * 0.45, len * 0.86, -len * 0.08 - lift * 0.42); c.stroke();
@@ -167,15 +167,15 @@ var ART = (function () {
     c.restore();
   }
 
-  // ---- Cabeza del dragón (perfil, mirando a +x) --------------------
-  // Cráneo con ceja, hocico alargado, cuernos barridos hacia atrás,
-  // mandíbula articulada con colmillos y lengua bífida.
+  // ---- Cabeza del dragÃ³n (perfil, mirando a +x) --------------------
+  // CrÃ¡neo con ceja, hocico alargado, cuernos barridos hacia atrÃ¡s,
+  // mandÃ­bula articulada con colmillos y lengua bÃ­fida.
 
   function dragonHead(c, r, col, dark, glowCol, jaw) {
     c.save();
-    var open = Math.max(0, Math.min(1, jaw)) * 0.52; // apertura de mandíbula (rad)
+    var open = Math.max(0, Math.min(1, jaw)) * 0.52; // apertura de mandÃ­bula (rad)
 
-    // ---------- CUERNOS (barridos hacia atrás, con anillos) ----------
+    // ---------- CUERNOS (barridos hacia atrÃ¡s, con anillos) ----------
     var horn = shade(dark, -12), hornHi = shade(dark, 22);
     // cuerno principal
     c.fillStyle = horn;
@@ -194,12 +194,12 @@ var ART = (function () {
     c.strokeStyle = rgba(hornHi, 0.55); c.lineWidth = Math.max(0.8, r * 0.045); c.lineCap = 'round';
     c.beginPath(); c.moveTo(-r * 0.62, -r * 0.86); c.quadraticCurveTo(-r * 0.55, -r * 0.78, -r * 0.46, -r * 0.7); c.stroke();
     c.beginPath(); c.moveTo(-r * 0.82, -r * 1.04); c.quadraticCurveTo(-r * 0.74, -r * 0.94, -r * 0.63, -r * 0.85); c.stroke();
-    // púa de mejilla y cuerno nasal
+    // pÃºa de mejilla y cuerno nasal
     c.fillStyle = horn;
     c.beginPath(); c.moveTo(-r * 0.62, -r * 0.1); c.lineTo(-r * 1.06, -r * 0.34); c.lineTo(-r * 0.58, -r * 0.3); c.closePath(); c.fill();
     c.beginPath(); c.moveTo(r * 0.98, -r * 0.4); c.lineTo(r * 1.12, -r * 0.62); c.lineTo(r * 1.1, -r * 0.36); c.closePath(); c.fill();
 
-    // ---------- MANDÍBULA INFERIOR (rota en la articulación) ----------
+    // ---------- MANDÃBULA INFERIOR (rota en la articulaciÃ³n) ----------
     c.save();
     c.translate(-r * 0.05, r * 0.16);
     c.rotate(open);
@@ -215,7 +215,7 @@ var ART = (function () {
     c.quadraticCurveTo(-r * 0.34, r * 0.18, -r * 0.28, r * 0.02);
     c.closePath(); c.fill();
     c.strokeStyle = rgba(dark, 0.7); c.lineWidth = Math.max(1, r * 0.04); c.stroke();
-    // lengua bífida (visible al abrir)
+    // lengua bÃ­fida (visible al abrir)
     if (jaw > 0.25) {
       c.strokeStyle = '#a03434'; c.lineWidth = r * 0.09; c.lineCap = 'round';
       c.beginPath();
@@ -238,16 +238,16 @@ var ART = (function () {
     }
     c.restore();
 
-    // ---------- CRÁNEO + HOCICO ----------
+    // ---------- CRÃNEO + HOCICO ----------
     var g = c.createLinearGradient(-r * 0.8, -r * 0.9, r * 1.2, r * 0.2);
     g.addColorStop(0, shade(col, 30));
     g.addColorStop(0.5, col);
     g.addColorStop(1, shade(col, -20));
     c.fillStyle = g;
     c.beginPath();
-    c.moveTo(-r * 0.78, r * 0.12);                     // unión con el cuello
+    c.moveTo(-r * 0.78, r * 0.12);                     // uniÃ³n con el cuello
     c.quadraticCurveTo(-r * 0.86, -r * 0.42, -r * 0.5, -r * 0.66);
-    c.quadraticCurveTo(-r * 0.2, -r * 0.84, r * 0.1, -r * 0.74);   // cráneo
+    c.quadraticCurveTo(-r * 0.2, -r * 0.84, r * 0.1, -r * 0.74);   // crÃ¡neo
     c.quadraticCurveTo(r * 0.22, -r * 0.72, r * 0.3, -r * 0.62);   // ceja
     c.quadraticCurveTo(r * 0.72, -r * 0.52, r * 1.08, -r * 0.34);  // puente del hocico
     c.quadraticCurveTo(r * 1.32, -r * 0.24, r * 1.34, -r * 0.1);   // punta
@@ -316,10 +316,10 @@ var ART = (function () {
   // Dibuja una criatura humanoide completa.
   // spec: colores y accesorios. st: {r, walk, atk, anim, freeze, flying, flap, enraged, ghost}
   // ============================================================
-  //  FX TEMÁTICOS — efectos de estado que nacen del mundo
+  //  FX TEMÃTICOS â€” efectos de estado que nacen del mundo
   // ============================================================
 
-  // Hoja pequeña apuntando en ang.
+  // Hoja pequeÃ±a apuntando en ang.
   function leaf(c, x, y, ang, size, col, dark) {
     c.save();
     c.translate(x, y); c.rotate(ang);
@@ -334,8 +334,8 @@ var ART = (function () {
     c.restore();
   }
 
-  // Enredadera que crece de (x1,y1) a (x2,y2) con curva orgánica.
-  // grow ∈ [0,1]; seed fija la forma; sway la mece al terminar.
+  // Enredadera que crece de (x1,y1) a (x2,y2) con curva orgÃ¡nica.
+  // grow âˆˆ [0,1]; seed fija la forma; sway la mece al terminar.
   function vine(c, x1, y1, x2, y2, grow, seed, sway, col, dark, thick) {
     var mx = (x1 + x2) / 2 + Math.sin(seed * 12.9) * (y2 - y1) * 0.35;
     var my = (y1 + y2) / 2 + Math.cos(seed * 7.3) * (x2 - x1) * 0.2;
@@ -347,7 +347,7 @@ var ART = (function () {
     c.strokeStyle = col;
     c.lineWidth = thick;
     c.beginPath(); c.moveTo(x1, y1); c.quadraticCurveTo(gx1, gy1, gx2, gy2); c.stroke();
-    // hojas a lo largo (aparecen según crece)
+    // hojas a lo largo (aparecen segÃºn crece)
     for (var li = 0; li < 3; li++) {
       var lp = 0.3 + li * 0.25;
       if (grow > lp) {
@@ -359,7 +359,7 @@ var ART = (function () {
     }
   }
 
-  // Raíz serpenteante a ras de suelo.
+  // RaÃ­z serpenteante a ras de suelo.
   function groundRoot(c, x, y, ang, len, grow, seed, col, dark, thick) {
     var px = x, py = y;
     c.strokeStyle = dark; c.lineCap = 'round';
@@ -381,7 +381,7 @@ var ART = (function () {
     c.stroke();
   }
 
-  // Llama orgánica de dos capas con vaivén irregular.
+  // Llama orgÃ¡nica de dos capas con vaivÃ©n irregular.
   function flame(c, x, y, w, h, t, seed) {
     var fl = Math.sin(t * 11 + seed) * 0.16 + Math.sin(t * 5.3 + seed * 2) * 0.1;
     var lean = Math.sin(t * 3.7 + seed) * w * 0.22;
@@ -399,7 +399,7 @@ var ART = (function () {
     c.quadraticCurveTo(x - w * 0.3 + lean * 0.4, y - h * 0.3, x + lean * 0.5, y - h * (0.55 + fl * 0.2));
     c.quadraticCurveTo(x + w * 0.3 + lean * 0.4, y - h * 0.3, x + w * 0.28, y);
     c.closePath(); c.fill();
-    // núcleo claro
+    // nÃºcleo claro
     c.fillStyle = 'rgba(255,244,200,0.9)';
     c.beginPath(); c.ellipse(x + lean * 0.25, y - h * 0.14, w * 0.12, h * 0.2, 0, 0, 6.28); c.fill();
   }
@@ -441,7 +441,7 @@ var ART = (function () {
     c.closePath(); c.fill();
   }
 
-  // Burbuja tóxica que sube y estalla.
+  // Burbuja tÃ³xica que sube y estalla.
   function toxinBubble(c, x, y, r, phase, col) {
     var a = Math.max(0, 1 - phase);
     c.strokeStyle = 'rgba(140,220,90,' + (a * 0.8).toFixed(3) + ')';
@@ -468,7 +468,202 @@ var ART = (function () {
   }
 
   // ============================================================
-  //  ARQUETIPOS CORPORALES — cada criatura con silueta y marcha
+  //  ORCO GUERRERO â€” reconstrucciÃ³n de alta fidelidad (ref. lÃ¡mina)
+  //  Volumen por degradados, luz cÃ¡lida superior-izq, contorno tinta.
+  // ============================================================
+  function orcWarrior(c, r, st, king) {
+    var t = st.anim || 0, walk = st.walk || 0, atk = st.atk || 0;
+    var skinHi = '#9cc45e', skinMid = '#7fae4a', skinLo = '#4a7030', skinDeep = '#33521f';
+    var INK = 'rgba(24,18,12,0.92)';
+    var ap = atkPose(atk);
+    var bob = -Math.abs(Math.sin(walk)) * r * 0.1;
+    var breath = Math.sin(t * 1.4) * r * 0.02;
+
+    c.save();
+    if (st.ghost) c.globalAlpha = st.ghost;
+    c.fillStyle = 'rgba(0,0,0,0.28)';
+    c.beginPath(); c.ellipse(0, r * 1.28, r * 0.95, r * 0.2, 0, 0, 6.28); c.fill();
+    c.translate(0, bob);
+    c.rotate(Math.sin(walk) * 0.03 + ap.lean * 0.5);
+
+    for (var leg = 0; leg < 2; leg++) {
+      var lph = walk + (leg ? Math.PI : 0);
+      var lsp = Math.sin(lph);
+      var lift = Math.max(0, Math.cos(lph)) * r * 0.18;
+      var hx = (leg ? 1 : -1) * r * 0.34;
+      var fx = hx + lsp * r * 0.16;
+      var fy = r * 1.18 - lift;
+      taper(c, hx, r * 0.55, fx * 0.7, r * 0.9 - lift * 0.4, r * 0.34, r * 0.24, skinLo, skinDeep);
+      taper(c, fx * 0.7, r * 0.9 - lift * 0.4, fx, fy, r * 0.24, r * 0.16, skinLo, skinDeep);
+      c.fillStyle = '#4a3319';
+      c.beginPath(); c.ellipse(fx + lsp * r * 0.06, fy, r * 0.24, r * 0.12, lsp * 0.2, 0, 6.28); c.fill();
+      c.strokeStyle = INK; c.lineWidth = Math.max(1, r * 0.045); c.stroke();
+    }
+
+    // brazo izquierdo (detrÃ¡s)
+    taper(c, -r * 0.62, -r * 0.15, -r * 0.85, r * 0.35, r * 0.3, r * 0.22, skinMid, skinLo);
+    taper(c, -r * 0.85, r * 0.35, -r * 0.78, r * 0.72, r * 0.22, r * 0.15, skinMid, skinLo);
+    c.fillStyle = '#5a4326';
+    c.beginPath(); c.roundRect(-r * 0.98, r * 0.3, r * 0.42, r * 0.2, r * 0.06); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(1, r * 0.04); c.stroke();
+
+    // torso barril
+    var tg = c.createLinearGradient(-r * 0.7, -r * 0.55, r * 0.6, r * 0.7);
+    tg.addColorStop(0, skinHi); tg.addColorStop(0.45, skinMid); tg.addColorStop(1, skinLo);
+    c.fillStyle = tg;
+    c.beginPath();
+    c.moveTo(-r * 0.66, -r * 0.42);
+    c.quadraticCurveTo(-r * 0.82, r * 0.1, -r * 0.6, r * 0.62);
+    c.quadraticCurveTo(0, r * 0.82, r * 0.6, r * 0.62);
+    c.quadraticCurveTo(r * 0.82, r * 0.1, r * 0.66, -r * 0.42);
+    c.quadraticCurveTo(0, -r * 0.62, -r * 0.66, -r * 0.42);
+    c.closePath(); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(1.4, r * 0.06); c.stroke();
+    c.fillStyle = 'rgba(40,60,25,0.4)';
+    c.beginPath(); c.ellipse(r * 0.18, r * 0.42, r * 0.34, r * 0.22, 0.2, 0, 6.28); c.fill();
+    // peto de cuero
+    var lg = c.createLinearGradient(0, -r * 0.3, 0, r * 0.55);
+    lg.addColorStop(0, '#7a5630'); lg.addColorStop(0.6, '#5c3f20'); lg.addColorStop(1, '#432c14');
+    c.fillStyle = lg;
+    c.beginPath();
+    c.moveTo(-r * 0.58, -r * 0.28);
+    c.quadraticCurveTo(0, -r * 0.42, r * 0.58, -r * 0.28);
+    c.lineTo(r * 0.52, r * 0.5);
+    c.quadraticCurveTo(0, r * 0.66, -r * 0.52, r * 0.5);
+    c.closePath(); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(1.2, r * 0.05); c.stroke();
+    c.strokeStyle = 'rgba(30,18,8,0.6)'; c.lineWidth = 1;
+    for (var st2 = -1; st2 <= 1; st2 += 2) {
+      c.beginPath(); c.moveTo(st2 * r * 0.2, -r * 0.34); c.quadraticCurveTo(st2 * r * 0.3, r * 0.1, st2 * r * 0.22, r * 0.52); c.stroke();
+    }
+    // hombrera metÃ¡lica
+    var pg = c.createLinearGradient(0, -r * 0.6, 0, -r * 0.2);
+    pg.addColorStop(0, '#b8bfca'); pg.addColorStop(0.5, '#8a929e'); pg.addColorStop(1, '#565e6a');
+    c.fillStyle = pg;
+    c.beginPath(); c.ellipse(r * 0.6, -r * 0.38, r * 0.3, r * 0.22, -0.3, 0, 6.28); c.fill();
+    c.strokeStyle = INK; c.stroke();
+    c.fillStyle = '#e0c874';
+    for (var rv = 0; rv < 3; rv++) { c.beginPath(); c.arc(r * (0.44 + rv * 0.14), -r * 0.44 + rv * 0.06 * r, r * 0.035, 0, 6.28); c.fill(); }
+
+    // cabeza
+    var hy = -r * 0.95 + breath;
+    var s = r * 0.62;
+    c.fillStyle = skinLo;
+    c.beginPath(); c.moveTo(-s * 0.8, hy - s * 0.1); c.lineTo(-s * 1.5, hy - s * 0.55); c.lineTo(-s * 0.72, hy - s * 0.5); c.closePath(); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(1, r * 0.04); c.stroke();
+    var hg = c.createLinearGradient(0, hy - s, 0, hy + s);
+    hg.addColorStop(0, skinHi); hg.addColorStop(0.5, skinMid); hg.addColorStop(1, skinLo);
+    c.fillStyle = hg;
+    c.beginPath();
+    c.moveTo(-s * 0.78, hy - s * 0.25);
+    c.quadraticCurveTo(-s * 0.85, hy - s * 0.95, 0, hy - s);
+    c.quadraticCurveTo(s * 0.85, hy - s * 0.95, s * 0.78, hy - s * 0.25);
+    c.quadraticCurveTo(s * 0.95, hy + s * 0.15, s * 0.62, hy + s * 0.5);
+    c.lineTo(s * 0.5, hy + s * 0.85);
+    c.quadraticCurveTo(0, hy + s * 1.05, -s * 0.5, hy + s * 0.85);
+    c.lineTo(-s * 0.62, hy + s * 0.5);
+    c.quadraticCurveTo(-s * 0.95, hy + s * 0.15, -s * 0.78, hy - s * 0.25);
+    c.closePath(); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(1.3, r * 0.055); c.stroke();
+    c.fillStyle = skinDeep;
+    c.beginPath();
+    c.moveTo(-s * 0.72, hy - s * 0.42);
+    c.quadraticCurveTo(0, hy - s * 0.62, s * 0.72, hy - s * 0.42);
+    c.lineTo(s * 0.6, hy - s * 0.18);
+    c.quadraticCurveTo(0, hy - s * 0.34, -s * 0.6, hy - s * 0.18);
+    c.closePath(); c.fill();
+    c.fillStyle = '#1a1008';
+    c.beginPath(); c.ellipse(-s * 0.32, hy - s * 0.18, s * 0.17, s * 0.11, 0, 0, 6.28); c.fill();
+    c.beginPath(); c.ellipse(s * 0.32, hy - s * 0.18, s * 0.17, s * 0.11, 0, 0, 6.28); c.fill();
+    c.fillStyle = st.enraged ? '#ff4030' : '#ffb43a';
+    c.beginPath(); c.arc(-s * 0.32, hy - s * 0.17, s * 0.07, 0, 6.28); c.fill();
+    c.beginPath(); c.arc(s * 0.32, hy - s * 0.17, s * 0.07, 0, 6.28); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.85)';
+    c.beginPath(); c.arc(-s * 0.29, hy - s * 0.2, s * 0.022, 0, 6.28); c.fill();
+    c.beginPath(); c.arc(s * 0.35, hy - s * 0.2, s * 0.022, 0, 6.28); c.fill();
+    c.fillStyle = skinLo;
+    c.beginPath(); c.moveTo(-s * 0.14, hy + s * 0.05); c.quadraticCurveTo(0, hy + s * 0.02, s * 0.14, hy + s * 0.05); c.quadraticCurveTo(s * 0.1, hy + s * 0.28, 0, hy + s * 0.3); c.quadraticCurveTo(-s * 0.1, hy + s * 0.28, -s * 0.14, hy + s * 0.05); c.closePath(); c.fill();
+    c.fillStyle = skinMid;
+    c.beginPath();
+    c.moveTo(-s * 0.55, hy + s * 0.55);
+    c.quadraticCurveTo(0, hy + s * 0.78, s * 0.55, hy + s * 0.55);
+    c.quadraticCurveTo(s * 0.4, hy + s * 0.95, 0, hy + s * 0.98);
+    c.quadraticCurveTo(-s * 0.4, hy + s * 0.95, -s * 0.55, hy + s * 0.55);
+    c.closePath(); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(1, r * 0.04); c.stroke();
+    c.strokeStyle = 'rgba(40,20,10,0.7)'; c.lineWidth = Math.max(1, s * 0.06);
+    c.beginPath(); c.moveTo(-s * 0.42, hy + s * 0.6); c.quadraticCurveTo(0, hy + s * 0.7, s * 0.42, hy + s * 0.6); c.stroke();
+    for (var tk = -1; tk <= 1; tk += 2) {
+      var tkg = c.createLinearGradient(tk * s * 0.4, hy + s * 0.5, tk * s * 0.4, hy + s * 0.05);
+      tkg.addColorStop(0, '#8a8062'); tkg.addColorStop(1, '#f2ecd2');
+      c.fillStyle = tkg;
+      c.beginPath();
+      c.moveTo(tk * s * 0.48, hy + s * 0.62);
+      c.quadraticCurveTo(tk * s * 0.36, hy + s * 0.25, tk * s * 0.28, hy + s * 0.08);
+      c.lineTo(tk * s * 0.2, hy + s * 0.6);
+      c.closePath(); c.fill();
+      c.strokeStyle = INK; c.lineWidth = Math.max(0.8, r * 0.03); c.stroke();
+    }
+    c.fillStyle = '#2e2014';
+    c.beginPath(); c.ellipse(0, hy - s * 0.95, s * 0.2, s * 0.14, -0.2, 0, 6.28); c.fill();
+    if (king) {
+      c.fillStyle = '#e0b84a';
+      c.beginPath();
+      c.moveTo(-s * 0.66, hy - s * 0.62);
+      c.lineTo(-s * 0.66, hy - s * 1.05); c.lineTo(-s * 0.3, hy - s * 0.75);
+      c.lineTo(0, hy - s * 1.18); c.lineTo(s * 0.3, hy - s * 0.75);
+      c.lineTo(s * 0.66, hy - s * 1.05); c.lineTo(s * 0.66, hy - s * 0.62);
+      c.closePath(); c.fill();
+      c.strokeStyle = INK; c.lineWidth = Math.max(1, r * 0.04); c.stroke();
+      c.fillStyle = '#c03828';
+      c.beginPath(); c.arc(0, hy - s * 0.78, s * 0.07, 0, 6.28); c.fill();
+    }
+
+    // brazo derecho + hacha
+    var shX = r * 0.6, shY = -r * 0.32;
+    c.save();
+    c.translate(shX, shY);
+    c.rotate(0.5 + ap.swing);
+    taper(c, 0, 0, r * 0.28, r * 0.34, r * 0.32, r * 0.24, skinMid, skinLo);
+    taper(c, r * 0.28, r * 0.34, r * 0.34, r * 0.72, r * 0.24, r * 0.16, skinMid, skinLo);
+    c.fillStyle = '#5a4326';
+    c.beginPath(); c.roundRect(r * 0.1, r * 0.3, r * 0.44, r * 0.2, r * 0.06); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(1, r * 0.04); c.stroke();
+    c.fillStyle = skinHi;
+    c.beginPath(); c.arc(r * 0.34, r * 0.76, r * 0.15, 0, 6.28); c.fill();
+    c.strokeStyle = INK; c.stroke();
+    c.rotate(-0.35);
+    c.fillStyle = '#4a2e14';
+    c.beginPath(); c.roundRect(-r * 0.06, -r * 1.5, r * 0.13, r * 1.9, r * 0.05); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(1, r * 0.035); c.stroke();
+    var axg = c.createLinearGradient(-r * 0.5, -r * 1.4, r * 0.55, -r * 0.7);
+    axg.addColorStop(0, '#e8ecf2'); axg.addColorStop(0.4, '#a8b0bc'); axg.addColorStop(1, '#5c646e');
+    c.fillStyle = axg;
+    c.beginPath();
+    c.moveTo(0, -r * 1.42);
+    c.quadraticCurveTo(-r * 0.55, -r * 1.38, -r * 0.62, -r * 1.0);
+    c.quadraticCurveTo(-r * 0.5, -r * 0.72, -r * 0.05, -r * 0.62);
+    c.lineTo(r * 0.1, -r * 0.66);
+    c.quadraticCurveTo(r * 0.5, -r * 0.9, r * 0.52, -r * 1.2);
+    c.quadraticCurveTo(r * 0.45, -r * 1.45, 0, -r * 1.42);
+    c.closePath(); c.fill();
+    c.strokeStyle = INK; c.lineWidth = Math.max(1.1, r * 0.05); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.55)';
+    c.beginPath(); c.moveTo(-r * 0.05, -r * 1.38); c.quadraticCurveTo(-r * 0.42, -r * 1.3, -r * 0.5, -r * 1.02); c.quadraticCurveTo(-r * 0.2, -r * 1.1, -r * 0.02, -r * 1.16); c.closePath(); c.fill();
+    if (atk > 0.3 && atk < 0.55) {
+      c.strokeStyle = 'rgba(255,255,255,' + (0.5 * (1 - Math.abs((atk - 0.42) / 0.13))).toFixed(2) + ')';
+      c.lineWidth = 2.4; c.lineCap = 'round';
+      c.beginPath(); c.arc(0, -r * 0.9, r * 0.95, -0.6, 0.7); c.stroke();
+    }
+    c.restore();
+
+    c.strokeStyle = 'rgba(255,246,210,0.22)'; c.lineWidth = Math.max(1.2, r * 0.055); c.lineCap = 'round';
+    c.beginPath(); c.arc(0, -r * 0.1, r * 0.78, Math.PI * 1.08, Math.PI * 1.55); c.stroke();
+    c.restore();
+  }
+
+  // ============================================================
+  //  ARQUETIPOS CORPORALES â€” cada criatura con silueta y marcha
   var BUILDS = {
     warrior: { legs: 'full', legL: 1, headR: 1, torso: 1, bodyW: 1, armW: 1, bob: 1, freq: 1, lean: 1, hunch: 0, bounce: false, death: null },
     imp:     { legs: 'full', legL: 0.52, headR: 1.55, torso: 0.82, bodyW: 1.18, armW: 0.9, bob: 2.1, freq: 1.55, lean: 1.6, hunch: 0.06, bounce: true, death: 'pop' },
@@ -478,9 +673,9 @@ var ART = (function () {
     flyer:   { legs: 'tucked', legL: 0.5, headR: 1.05, torso: 0.9, bodyW: 1.05, armW: 0.85, bob: 0.8, freq: 1.2, lean: 1, hunch: 0.12, bounce: false, death: 'collapse' }
   };
 
-  // Curva de ataque: anticipación → golpe → recuperación.
+  // Curva de ataque: anticipaciÃ³n â†’ golpe â†’ recuperaciÃ³n.
   function atkPose(p) {
-    // p ∈ [0,1] → { lean, reach, swing }
+    // p âˆˆ [0,1] â†’ { lean, reach, swing }
     if (p <= 0) return { lean: 0, reach: 0, swing: 0 };
     if (p < 0.3) { var w = p / 0.3; return { lean: -0.10 * w, reach: -0.16 * w, swing: -0.9 * w }; }
     if (p < 0.5) { var s = (p - 0.3) / 0.2; return { lean: -0.10 + 0.34 * s, reach: -0.16 + 1.1 * s, swing: -0.9 + 2.6 * s }; }
@@ -511,7 +706,7 @@ var ART = (function () {
     c.strokeStyle = rgba(dark, 0.7); c.lineWidth = 1.1; c.stroke();
   }
 
-  // Cresta de púas dorsales.
+  // Cresta de pÃºas dorsales.
   function spikeRidge(c, x1, x2, y, n, h, col, dark) {
     for (var i = 0; i < n; i++) {
       var px = x1 + (x2 - x1) * (i / Math.max(1, n - 1));
@@ -531,14 +726,14 @@ var ART = (function () {
     c.save();
     if (st.ghost) c.globalAlpha = st.ghost;
 
-    // ---- ESTADO: aparición (pop elástico) ----
+    // ---- ESTADO: apariciÃ³n (pop elÃ¡stico) ----
     if (st.spawn > 0) {
       var sp = Math.min(1, st.spawn);
       var el = 1 + Math.sin(sp * Math.PI) * 0.35;
       c.scale(0.35 + 0.65 * (1 - sp) * el, 0.35 + 0.65 * (1 - sp));
     }
 
-    // ---- ESTADO: daño (squash + retroceso direccional) ----
+    // ---- ESTADO: daÃ±o (squash + retroceso direccional) ----
     var hurt = Math.max(0, Math.min(1, st.hurt || 0));
     if (hurt > 0) {
       var hk = hurt * hurt;
@@ -652,11 +847,11 @@ var ART = (function () {
         var fy = ground - lift;
         var kx = fx * 0.45 + sp * r * 0.18, ky = hipY + legL * 0.52 - lift * 0.5;
         var hipX = (side ? 1 : -1) * r * 0.26 * B.bodyW * 0.85;
-        // muslo (ancho) → rodilla
+        // muslo (ancho) â†’ rodilla
         taper(c, hipX, hipY + r * 0.06, kx, ky, r * 0.34, r * 0.2, pant, legShade);
-        // espinilla → tobillo
+        // espinilla â†’ tobillo
         taper(c, kx, ky, fx, fy - r * 0.08, r * 0.2, r * 0.1, pant, legShade);
-        // botín con empeine
+        // botÃ­n con empeine
         var sh = sp * 0.18;
         c.fillStyle = boot;
         c.beginPath();
@@ -727,7 +922,7 @@ var ART = (function () {
       c.moveTo(0, shoulderY - r * 0.18);
       c.quadraticCurveTo(-r * 0.06, hipY - r * 0.12, -r * 0.02, hipY);
       c.stroke();
-      // cinturón curvo con hebilla
+      // cinturÃ³n curvo con hebilla
       c.fillStyle = spec.belt || '#2e2010';
       c.beginPath();
       c.moveTo(-r * bodyW * 0.42, hipY - r * 0.12);
@@ -871,7 +1066,7 @@ var ART = (function () {
     var head = spec.head || 'human';
     var hy = headY;
     if (head === 'skull' || head === 'rot') {
-      // cráneo
+      // crÃ¡neo
       c.fillStyle = skin;
       c.beginPath();
       c.moveTo(-headR * r * 0.8, hy);
@@ -880,7 +1075,7 @@ var ART = (function () {
       c.lineTo(headR * r * 0.55, hy + headR * r * 0.75);
       c.lineTo(-headR * r * 0.55, hy + headR * r * 0.75);
       c.closePath(); c.fill();
-      // mandíbula
+      // mandÃ­bula
       c.fillStyle = shade(skin, -18);
       c.fillRect(-headR * r * 0.55, hy + headR * r * 0.4, headR * r * 1.1, headR * r * 0.38);
       // cuencas
@@ -891,7 +1086,7 @@ var ART = (function () {
       c.fillStyle = shade(skin, -16);
       c.beginPath(); c.ellipse(-headR * r * 0.32, hy - headR * r * 0.42, headR * r * 0.3, headR * r * 0.12, 0, 0, 6.28); c.fill();
       c.beginPath(); c.ellipse(headR * r * 0.32, hy - headR * r * 0.42, headR * r * 0.3, headR * r * 0.12, 0, 0, 6.28); c.fill();
-      // pómulos hundidos
+      // pÃ³mulos hundidos
       c.fillStyle = rgba(0, 0, 0, 0.12);
       c.beginPath(); c.ellipse(-headR * r * 0.55, hy + headR * r * 0.1, headR * r * 0.16, headR * r * 0.26, 0, 0, 6.28); c.fill();
       c.beginPath(); c.ellipse(headR * r * 0.55, hy + headR * r * 0.1, headR * r * 0.16, headR * r * 0.26, 0, 0, 6.28); c.fill();
@@ -914,10 +1109,10 @@ var ART = (function () {
         c.beginPath(); c.arc(headR * r * 0.32, hy - headR * r * 0.2, headR * r * 0.09, 0, 6.28); c.fill();
       }
     } else if (head === 'orc') {
-      // ORCO — cráneo ancho, prognatismo marcado, colmillos y ceño pesado
+      // ORCO â€” crÃ¡neo ancho, prognatismo marcado, colmillos y ceÃ±o pesado
       var s = headR * r;
       var skinHi = shade(skin, 16), skinLo = shade(skin, -26);
-      // orejas puntiagudas en abanico (detrás del cráneo)
+      // orejas puntiagudas en abanico (detrÃ¡s del crÃ¡neo)
       c.fillStyle = skinLo;
       c.beginPath(); c.moveTo(-s * 0.78, hy - s * 0.22); c.lineTo(-s * 1.44, hy - s * 0.64); c.lineTo(-s * 0.76, hy - s * 0.56); c.closePath(); c.fill();
       c.beginPath(); c.moveTo(s * 0.78, hy - s * 0.22); c.lineTo(s * 1.44, hy - s * 0.64); c.lineTo(s * 0.76, hy - s * 0.56); c.closePath(); c.fill();
@@ -934,7 +1129,7 @@ var ART = (function () {
         c.fillStyle = '#e0b84a';
         c.beginPath(); c.arc(s * 1.04, hy - s * 0.18, s * 0.035, 0, 6.28); c.fill();
       }
-      // cráneo: frente ancha, pómulos y mandíbula masiva
+      // crÃ¡neo: frente ancha, pÃ³mulos y mandÃ­bula masiva
       var og = c.createLinearGradient(0, hy - s, 0, hy + s * 0.95);
       og.addColorStop(0, skinHi); og.addColorStop(0.55, skin); og.addColorStop(1, skinLo);
       c.fillStyle = og;
@@ -950,16 +1145,16 @@ var ART = (function () {
       c.quadraticCurveTo(-s * 0.94, hy + s * 0.02, -s * 0.76, hy - s * 0.32);
       c.closePath(); c.fill();
       c.strokeStyle = 'rgba(20,12,8,0.85)'; c.lineWidth = Math.max(1.2, r * 0.055); c.stroke();
-      // plano de la mandíbula (sombra bajo el labio superior)
+      // plano de la mandÃ­bula (sombra bajo el labio superior)
       c.fillStyle = 'rgba(0,0,0,0.16)';
       c.beginPath(); c.ellipse(0, hy + s * 0.6, s * 0.52, s * 0.3, 0, 0, 6.28); c.fill();
-      // brillo de frente y sombras de pómulo
+      // brillo de frente y sombras de pÃ³mulo
       c.fillStyle = 'rgba(255,255,255,0.1)';
       c.beginPath(); c.ellipse(-s * 0.22, hy - s * 0.62, s * 0.22, s * 0.12, -0.3, 0, 6.28); c.fill();
       c.fillStyle = 'rgba(0,0,0,0.13)';
       c.beginPath(); c.ellipse(s * 0.55, hy + s * 0.05, s * 0.2, s * 0.28, -0.2, 0, 6.28); c.fill();
       c.beginPath(); c.ellipse(-s * 0.55, hy + s * 0.05, s * 0.2, s * 0.28, 0.2, 0, 6.28); c.fill();
-      // ceño pesado (banda ósea en sombra)
+      // ceÃ±o pesado (banda Ã³sea en sombra)
       c.fillStyle = shade(skin, -30);
       c.beginPath();
       c.moveTo(-s * 0.72, hy - s * 0.52);
@@ -969,7 +1164,7 @@ var ART = (function () {
       c.quadraticCurveTo(s * 0.3, hy - s * 0.46, 0, hy - s * 0.4);
       c.quadraticCurveTo(-s * 0.3, hy - s * 0.46, -s * 0.66, hy - s * 0.36);
       c.closePath(); c.fill();
-      // ojos hundidos bajo el ceño
+      // ojos hundidos bajo el ceÃ±o
       c.fillStyle = 'rgba(10,6,4,0.6)';
       c.beginPath(); c.ellipse(-s * 0.3, hy - s * 0.32, s * 0.17, s * 0.11, 0, 0, 6.28); c.fill();
       c.beginPath(); c.ellipse(s * 0.3, hy - s * 0.32, s * 0.17, s * 0.11, 0, 0, 6.28); c.fill();
@@ -1001,14 +1196,14 @@ var ART = (function () {
       c.moveTo(-s * 0.4, hy + s * 0.42);
       c.quadraticCurveTo(0, hy + s * 0.5, s * 0.4, hy + s * 0.42);
       c.stroke();
-      // colmillos inferiores (raíz oscura + marfil)
+      // colmillos inferiores (raÃ­z oscura + marfil)
       c.fillStyle = shade('#e8dfc2', -60);
       c.beginPath(); c.moveTo(-s * 0.36, hy + s * 0.6); c.lineTo(-s * 0.24, hy + s * 0.16); c.lineTo(-s * 0.1, hy + s * 0.6); c.closePath(); c.fill();
       c.beginPath(); c.moveTo(s * 0.36, hy + s * 0.6); c.lineTo(s * 0.24, hy + s * 0.16); c.lineTo(s * 0.1, hy + s * 0.6); c.closePath(); c.fill();
       c.fillStyle = '#efe8ce';
       c.beginPath(); c.moveTo(-s * 0.33, hy + s * 0.58); c.lineTo(-s * 0.25, hy + s * 0.22); c.lineTo(-s * 0.14, hy + s * 0.58); c.closePath(); c.fill();
       c.beginPath(); c.moveTo(s * 0.33, hy + s * 0.58); c.lineTo(s * 0.25, hy + s * 0.22); c.lineTo(s * 0.14, hy + s * 0.58); c.closePath(); c.fill();
-      // dientes superiores pequeños
+      // dientes superiores pequeÃ±os
       c.fillStyle = '#e8dfc2';
       c.beginPath(); c.moveTo(-s * 0.08, hy + s * 0.44); c.lineTo(-s * 0.04, hy + s * 0.56); c.lineTo(s * 0.0, hy + s * 0.44); c.closePath(); c.fill();
       c.beginPath(); c.moveTo(s * 0.08, hy + s * 0.44); c.lineTo(s * 0.04, hy + s * 0.56); c.lineTo(s * 0.0, hy + s * 0.44); c.closePath(); c.fill();
@@ -1055,7 +1250,7 @@ var ART = (function () {
       c.quadraticCurveTo(headR * r * 0.6, hy + headR * r * 0.85, 0, hy + headR * r * 0.8);
       c.quadraticCurveTo(-headR * r * 0.6, hy + headR * r * 0.85, -headR * r * 0.8, hy - headR * r * 0.1);
       c.closePath(); c.fill();
-      // sombras de mejilla y mandíbula
+      // sombras de mejilla y mandÃ­bula
       c.fillStyle = rgba(0, 0, 0, 0.16);
       c.beginPath(); c.ellipse(-headR * r * 0.4, hy + headR * r * 0.15, headR * r * 0.26, headR * r * 0.4, 0, 0, 6.28); c.fill();
       c.fillStyle = shade(skin, -24);
@@ -1098,7 +1293,7 @@ var ART = (function () {
       c.beginPath(); c.arc(-headR * r * 0.2, hy - headR * r * 0.15, headR * r * 0.18, 0, 6.28); c.fill();
       c.beginPath(); c.arc(headR * r * 0.2, hy - headR * r * 0.15, headR * r * 0.18, 0, 6.28); c.fill();
     } else {
-      // humano / goblin (cabeza redondeada con mentón y volumen)
+      // humano / goblin (cabeza redondeada con mentÃ³n y volumen)
       c.fillStyle = skin;
       c.beginPath();
       c.moveTo(-headR * r * 0.82, hy - headR * r * 0.12);
@@ -1284,7 +1479,7 @@ var ART = (function () {
       c.fillRect(-r * 0.02, -r * 0.08, r * 0.22, r * 0.12);
     } else if (w === 'staff') {
       rod(c, 0, 0, r * 0.3, -r * 1.5, r * 0.16, '#4a3018', '#241206');
-      // canalización: el orbe crece durante la anticipación del hechizo
+      // canalizaciÃ³n: el orbe crece durante la anticipaciÃ³n del hechizo
       var charge = atk > 0 && atk < 0.5 ? Math.sin(Math.min(1, atk / 0.5) * Math.PI * 0.5) : 0;
       var orbY = -r * 1.55 + Math.sin(st.anim * 2) * r * 0.05;
       if (charge > 0.05) {
@@ -1344,7 +1539,7 @@ var ART = (function () {
 
   // ---- Criaturas no humanoides ----------------------------------
 
-  // Murciélago
+  // MurciÃ©lago
   function bat(c, r, st) {
     var flap = Math.sin(st.anim * 3) * 0.5;
     c.save();
@@ -1413,19 +1608,19 @@ var ART = (function () {
       c.quadraticCurveTo(Math.cos(a) * r * 0.7, Math.sin(a) * r * 0.7 - r * 0.4, Math.cos(a) * r * 1.5, -r * 0.9 + Math.sin(a * 1.3) * r * 0.3);
       c.stroke();
     }
-    // núcleo
+    // nÃºcleo
     orb(c, 0, 0, r * 0.55, '#8ad47f', 'rgba(200,255,210,0.8)');
     c.fillStyle = 'rgba(255,255,255,0.9)';
     c.beginPath(); c.arc(-r * 0.15, -r * 0.18, r * 0.12, 0, 6.28); c.fill();
     c.restore();
   }
 
-  // Araña
+  // AraÃ±a
   function spider(c, r, st) {
     var sc = st.r;
     c.fillStyle = '#2a2028';
     c.beginPath(); c.ellipse(0, 0, sc * 0.8, sc * 0.6, 0, 0, 6.28); c.fill();
-    // cefalotórax
+    // cefalotÃ³rax
     c.fillStyle = '#3a3040';
     c.beginPath(); c.ellipse(0, -sc * 0.35, sc * 0.55, sc * 0.42, 0, 0, 6.28); c.fill();
     // patas
@@ -1475,15 +1670,15 @@ var ART = (function () {
     c.beginPath(); c.ellipse(0, r * 1.2, r * 0.6, r * 0.14, 0, 0, 6.28); c.fill();
     var bob = Math.abs(Math.sin(st.walk)) * -r * 0.08;
     var sw = Math.sin(st.walk);
-    // brazos de roca (detrás del torso)
+    // brazos de roca (detrÃ¡s del torso)
     c.fillStyle = '#6a6660';
     c.beginPath(); c.ellipse(-r * 0.95 - sw * r * 0.12, -r * 0.12, r * 0.2, r * 0.58, 0.14, 0, 6.28); c.fill();
     c.beginPath(); c.ellipse(r * 0.95 + sw * r * 0.12, -r * 0.12, r * 0.2, r * 0.58, -0.14, 0, 6.28); c.fill();
-    // puños de roca
+    // puÃ±os de roca
     c.fillStyle = '#54504b';
     c.beginPath(); c.arc(-r * 0.98 - sw * r * 0.12, r * 0.46, r * 0.24, 0, 6.28); c.fill();
     c.beginPath(); c.arc(r * 0.98 + sw * r * 0.12, r * 0.46, r * 0.24, 0, 6.28); c.fill();
-    // piernas cónicas (muslo → tobillo)
+    // piernas cÃ³nicas (muslo â†’ tobillo)
     taper(c, -r * 0.32, r * 0.46 + bob, -r * 0.4, r * 1.1 + bob, r * 0.4, r * 0.26, '#6a6660', '#3f3c38');
     taper(c, r * 0.32, r * 0.46 + bob, r * 0.4, r * 1.1 + bob, r * 0.4, r * 0.26, '#6a6660', '#3f3c38');
     // pies de roca
@@ -1545,7 +1740,7 @@ var ART = (function () {
     c.restore();
   }
 
-  // Gólem de fuego (reutiliza stoneGolem con parámetros)
+  // GÃ³lem de fuego (reutiliza stoneGolem con parÃ¡metros)
   function fireGolem(c, r, st) {
     var temp = st.r; st.r = r;
     stoneGolem(c, r, st);
@@ -1571,7 +1766,7 @@ var ART = (function () {
     c.restore();
   }
 
-  // -------- Registro público ---------
+  // -------- Registro pÃºblico ---------
 
   return {
     shade: shade,
@@ -1587,6 +1782,7 @@ var ART = (function () {
     wing: wing,
     orb: orb,
     rod: rod,
+    orcWarrior: orcWarrior,
     atkPose: atkPose,
     tail: tail,
     hump: hump,
