@@ -39,6 +39,8 @@ class Enemy {
     this.buffed = 1;
     this.anim = Math.random() * 6.28;
     this.walkPhase = Math.random() * 6.28;
+    this.spawnT = 0;
+    this._stepCycle = -1;
     this.wobbleS = 0;
     this.flash = 0;
     this.face = 1;
@@ -164,6 +166,7 @@ class Enemy {
   update(dt, game) {
     this.anim += dt * (this.flying ? 9 : 5);
     this.wobbleS = this.anim;
+    this.spawnT += dt;
     if (!this.alive) { this.deadT -= dt; return; }
     if (this.flash > 0) this.flash -= dt;
     if (this.burn) {
@@ -233,16 +236,24 @@ class Enemy {
     if (typeof WEATHER !== 'undefined' && WEATHER.fx && WEATHER.fx.enemySpeed) weatherSpeed = WEATHER.fx.enemySpeed;
     var spd = this.speed * (this.freeze ? 0.1 : 1) * slowMult * this.buffed * (this.enraged ? 1.6 : 1) * weatherSpeed;
     this.walkPhase += dt * spd * 0.085;
-    // polvo de pisadas al caminar
+    // polvo de pisadas al caminar (más denso en brutes y jefes)
     if (!this.flying) {
       var step = Math.floor(this.walkPhase * 2);
       if (step !== this._step) {
         this._step = step;
+        var heavy = this.boss || this.r >= 14;
         game.particles.push({
           x: this.x - this.face * 2, y: this.y + this.r * 0.85,
           vx: (Math.random() - 0.5) * 12, vy: -6 - Math.random() * 8,
           life: 0.32, max: 0.32, color: 'rgba(150,130,100,0.45)', size: 1.8, grav: -4
         });
+        if (heavy) {
+          game.particles.push({
+            x: this.x - this.face * this.r * 0.5, y: this.y + this.r * 0.9,
+            vx: (Math.random() - 0.5) * 26, vy: -10 - Math.random() * 12,
+            life: 0.42, max: 0.42, color: 'rgba(160,140,105,0.5)', size: 2.6, grav: -6
+          });
+        }
       }
     }
     if (this.regen > 0 && !this.freeze && !this.burn) {
@@ -285,6 +296,14 @@ class Enemy {
           blocker.takeDamage(this.meleeDmg, 'physical');
           this.flash = 0.1;
           sfx('enemy_attack_tower', 0.3);
+          // chispas de impacto sincronizadas con el golpe
+          for (var mk = 0; mk < 3; mk++) {
+            game.particles.push({
+              x: blocker.x + (Math.random() - 0.5) * 8, y: blocker.y - 4 + (Math.random() - 0.5) * 8,
+              vx: (Math.random() - 0.5) * 60, vy: -20 - Math.random() * 40,
+              life: 0.22, max: 0.22, color: mk === 0 ? '#fff4d0' : '#ffca6a', size: 1.6, grav: 40
+            });
+          }
         }
         var bp = game.pathPoint(this.pathPos);
         this.x = bp.x;
@@ -430,12 +449,20 @@ class Enemy {
     ctx.save();
     if (dying) {
       var fall = Math.max(0, Math.min(1, this.deadT / this.deadTMax));
-      ctx.globalAlpha = this.deathFrozen ? fall * fall : fall;
+      var spec0 = this._spec();
+      // los arquetipos con muerte propia (desplome/disolución/pop) se
+      // gestionan dentro de ART.figure; fuera solo se traslada
+      var figDeath = !this.deathFrozen && typeof spec0 === 'object' &&
+        (spec0.deathStyle || (spec0.build && spec0.build !== 'warrior'));
       ctx.translate(this.x, this.y);
-      if (this.deathFrozen) {
+      if (figDeath) {
+        ctx.globalAlpha = 1; // el desvanecimiento lo aplica figure()
+      } else if (this.deathFrozen) {
+        ctx.globalAlpha = fall * fall;
         ctx.translate(0, (1 - fall) * 8);
         ctx.rotate((1 - fall) * 0.5);
       } else {
+        ctx.globalAlpha = fall;
         ctx.rotate(0.08 - this.face * (1 - fall) * 1.15);
         ctx.translate(0, (1 - fall) * 4);
       }
@@ -587,7 +614,11 @@ class Enemy {
       ghost: null,
       flap: Math.sin(this.anim),
       blink: (this.anim % 8.5) > 8.18,
-      face: this.face
+      face: this.face,
+      // estados de animación por arquetipo
+      hurt: this.flash > 0 ? Math.max(0, Math.min(1, this.flash / 0.12)) : 0,
+      death: !this.alive && this.deadTMax > 0 ? Math.max(0, Math.min(1, 1 - this.deadT / this.deadTMax)) : -1,
+      spawn: this.spawnT < 0.45 ? 1 - this.spawnT / 0.45 : 0
     };
     var spec = this._spec();
     if (typeof spec === 'string') {
@@ -620,28 +651,28 @@ class Enemy {
 
   _spec() {
     var m = {
-      goblin: { skin: '#4a8f4f', tunic: '#5a4a28', armor: '#66512d', bracer: '#806634', belt: '#3a2a14', head: 'human', ears: 'goblin', eyeCol: '#ffd23a', smile: true, weapon: 'club', headR: 0.6, bodyW: 0.8, torso: 0.85 },
-      sorcerer: { skin: '#4a8f4f', body: 'robe', tunic: '#4a2a6a', hoodCol: '#3a1f55', head: 'hood', eyeCol: '#c8a0ff', weapon: 'staff', glowCol: '#9a6aff', headR: 0.55, torso: 0.95, trim: '#6a4a8a' },
-      orc: { skin: '#5a8a3a', tunic: '#6a4a2a', armor: '#4a3a2a', belt: '#2e2010', head: 'orc', eyeCol: '#ff5a3a', hair: 'topknot', earring: true, weapon: 'axe', headR: 0.55, bodyW: 0.95, torso: 1.0 },
-      berserker: { skin: '#8a5a2a', tunic: '#6a2a1a', armor: '#7b3b20', bracer: '#9a5428', belt: '#2e2010', head: 'orc', eyeCol: '#ff3a2a', hair: 'wild', scar: true, weapon: 'cleaver', headR: 0.55, bodyW: 0.95, torso: 0.95 },
-      skeleton: { skin: '#d8d6c8', tunic: '#c4c2b2', bones: true, armor: '#6a6a78', belt: '#4a4a4a', head: 'skull', eyeCol: '#5a5a6a', weapon: 'sword', headR: 0.52, torso: 1.0, bodyW: 0.85 },
-      undead: { skin: '#9aa48c', tunic: '#3a4048', armor: '#4a4a5a', belt: '#2a2a34', head: 'rot', eyeCol: '#ffd23a', weapon: 'sword', headR: 0.52, torso: 1.0 },
-      troll: { skin: '#6a9a6a', tunic: '#4a5a2a', armor: '#5c552c', bracer: '#7f7438', belt: '#2e2a10', head: 'human', ears: 'goblin', eyeCol: '#ff8a2a', smile: true, weapon: 'club', headR: 0.6, bodyW: 1.1, torso: 1.1 },
-      necromancer: { skin: '#7a8a8a', body: 'robe', tunic: '#2a1a3a', hoodCol: '#1f142a', head: 'hood', eyeCol: '#7aff9a', weapon: 'staff', glowCol: '#7aff9a', headR: 0.52, torso: 1.0, cape: '#1f142a' },
-      orcKing: { skin: '#4a7a2a', tunic: '#4a2a1a', armor: '#9a9aa8', trim: '#e0b84a', belt: '#2e2010', skirt: '#4a3a2a', cape: '#b03030', head: 'orc', eyeCol: '#ffb03a', hair: 'topknot', earring: true, crown: true, weapon: 'axe', headR: 0.58, bodyW: 1.05, torso: 1.05 },
-      lord: { skin: '#5a4a5a', body: 'robe', tunic: '#1a1024', hoodCol: '#120a1a', head: 'rot', eyeCol: '#c8a0ff', crown: true, trim: '#8a5aff', weapon: 'scythe', glowCol: '#a08aff', headR: 0.54, torso: 1.05, cape: '#120a1a' },
-      voidWalker: { skin: '#8a7aaa', body: 'robe', tunic: '#120a1f', hoodCol: '#0a0612', head: 'hood', eyeCol: '#b08aff', weapon: 'staff', glowCol: '#b08aff', headR: 0.54, torso: 1.0, cape: '#0a0612', trim: '#5a3a8a' },
-      saboteur: { skin: '#8a7a4a', tunic: '#4a3a22', armor: '#68502b', bracer: '#97713a', belt: '#2a1c0e', head: 'human', ears: 'goblin', eyeCol: '#ffd23a', smile: true, weapon: 'torch', headR: 0.55, bodyW: 0.8, torso: 0.85 },
-      assassin: { skin: '#c8b8a8', body: 'robe', tunic: '#2a2530', hoodCol: '#1f1a26', head: 'hood', eyeCol: '#ff5a3a', weapon: 'dagger', headR: 0.52, torso: 0.95, trim: '#3a3a4a' },
-      thief: { skin: '#c8b8a8', tunic: '#5a5a2a', armor: '#4b4926', bracer: '#77713c', belt: '#2e2a14', head: 'human', eyeCol: '#3a3a4a', weapon: 'dagger', headR: 0.52, torso: 0.9, bodyW: 0.8 },
-      hulker: { skin: '#5a1a5a', tunic: '#3a122a', belt: '#24101a', head: 'orc', eyeCol: '#ff2a6a', scar: true, hair: 'wild', weapon: 'cleaver', headR: 0.6, bodyW: 1.25, torso: 1.2 },
-      gargoyle: { skin: '#6a6a72', tunic: '#4a4a52', armor: '#8a8a94', belt: '#3a3a44', head: 'demon', eyeCol: '#ff3a2a', wings: true, wingCol: '#5a5a64', weapon: 'club', headR: 0.55, torso: 1.0, bodyW: 1.0 },
-      shaman: { skin: '#a07a3a', tunic: '#6a4a2a', armor: '#80602d', bracer: '#a57e3c', belt: '#3a2a14', skirt: '#5a4a3a', head: 'orc', eyeCol: '#ffd23a', earring: true, scar: true, totem: true, weapon: 'staff', glowCol: '#ffb04a', headR: 0.55, torso: 0.95, bodyW: 0.9 },
-      orcShield: { skin: '#5a8a3a', tunic: '#4a3a22', armor: '#6b6f7c', bracer: '#806634', belt: '#2e2010', head: 'orc', eyeCol: '#ff5a3a', hair: 'topknot', weapon: 'club', headR: 0.58, bodyW: 1.05, torso: 1.0 },
-      mender: { skin: '#4a8f4f', body: 'robe', tunic: '#2a5a38', hoodCol: '#1f4529', head: 'hood', eyeCol: '#8affb0', weapon: 'staff', glowCol: '#7aff9a', headR: 0.55, torso: 0.95, trim: '#4a8a5a' },
-      phaseStalker: { skin: '#aab8d8', body: 'robe', tunic: '#2a3048', hoodCol: '#1c2236', head: 'hood', eyeCol: '#9fd0ff', weapon: 'dagger', headR: 0.52, torso: 0.95, trim: '#4a5a8a' },
-      demon: { skin: '#c8382a', tunic: '#6a1f1a', armor: '#8a3a3a', belt: '#3a1210', trim: '#ff8a3a', head: 'demon', eyeCol: '#ffe23a', weapon: 'cleaver', headR: 0.58, bodyW: 1.0, torso: 1.0 },
-      lich: { skin: '#7a6a9a', body: 'robe', tunic: '#2a1a3a', hoodCol: '#1f142a', head: 'rot', eyeCol: '#8aff9a', crown: true, weapon: 'staff', glowCol: '#8aff9a', headR: 0.52, torso: 1.0, cape: '#1f142a', trim: '#c9a54a' },
+      goblin: { build: 'imp', skin: '#4a8f4f', tunic: '#5a4a28', armor: '#66512d', bracer: '#806634', belt: '#3a2a14', head: 'human', ears: 'goblin', eyeCol: '#ffd23a', smile: true, weapon: 'club', headR: 0.6, bodyW: 0.8, torso: 0.85 },
+      sorcerer: { build: 'caster', skin: '#4a8f4f', body: 'robe', tunic: '#4a2a6a', hoodCol: '#3a1f55', head: 'hood', eyeCol: '#c8a0ff', weapon: 'staff', glowCol: '#9a6aff', headR: 0.55, torso: 0.95, trim: '#6a4a8a' },
+      orc: { build: 'brute', hump: 0.35, skin: '#5a8a3a', tunic: '#6a4a2a', armor: '#4a3a2a', belt: '#2e2010', head: 'orc', eyeCol: '#ff5a3a', hair: 'topknot', earring: true, weapon: 'axe', headR: 0.55, bodyW: 0.95, torso: 1.0 },
+      berserker: { build: 'brute', hump: 0.45, spikes: 0.35, skin: '#8a5a2a', tunic: '#6a2a1a', armor: '#7b3b20', bracer: '#9a5428', belt: '#2e2010', head: 'orc', eyeCol: '#ff3a2a', hair: 'wild', scar: true, weapon: 'cleaver', headR: 0.55, bodyW: 0.95, torso: 0.95 },
+      skeleton: { build: 'warrior', deathStyle: 'crumble', skin: '#d8d6c8', tunic: '#c4c2b2', bones: true, armor: '#6a6a78', belt: '#4a4a4a', head: 'skull', eyeCol: '#5a5a6a', weapon: 'sword', headR: 0.52, torso: 1.0, bodyW: 0.85 },
+      undead: { build: 'warrior', deathStyle: 'collapse', skin: '#9aa48c', tunic: '#3a4048', armor: '#4a4a5a', belt: '#2a2a34', head: 'rot', eyeCol: '#ffd23a', weapon: 'sword', headR: 0.52, torso: 1.0 },
+      troll: { build: 'brute', hump: 0.55, tail: { len: 1.1, col: '#6a9a6a', dark: '#3a5a3a' }, skin: '#6a9a6a', tunic: '#4a5a2a', armor: '#5c552c', bracer: '#7f7438', belt: '#2e2a10', head: 'human', ears: 'goblin', eyeCol: '#ff8a2a', smile: true, weapon: 'club', headR: 0.6, bodyW: 1.1, torso: 1.1 },
+      necromancer: { build: 'caster', skin: '#7a8a8a', body: 'robe', tunic: '#2a1a3a', hoodCol: '#1f142a', head: 'hood', eyeCol: '#7aff9a', weapon: 'staff', glowCol: '#7aff9a', headR: 0.52, torso: 1.0, cape: '#1f142a' },
+      orcKing: { build: 'brute', hump: 0.3, skin: '#4a7a2a', tunic: '#4a2a1a', armor: '#9a9aa8', trim: '#e0b84a', belt: '#2e2010', skirt: '#4a3a2a', cape: '#b03030', head: 'orc', eyeCol: '#ffb03a', hair: 'topknot', earring: true, crown: true, weapon: 'axe', headR: 0.58, bodyW: 1.05, torso: 1.05 },
+      lord: { build: 'caster', skin: '#5a4a5a', body: 'robe', tunic: '#1a1024', hoodCol: '#120a1a', head: 'rot', eyeCol: '#c8a0ff', crown: true, trim: '#8a5aff', weapon: 'scythe', glowCol: '#a08aff', headR: 0.54, torso: 1.05, cape: '#120a1a' },
+      voidWalker: { build: 'spectral', skin: '#8a7aaa', body: 'robe', tunic: '#120a1f', hoodCol: '#0a0612', head: 'hood', eyeCol: '#b08aff', weapon: 'staff', glowCol: '#b08aff', headR: 0.54, torso: 1.0, cape: '#0a0612', trim: '#5a3a8a' },
+      saboteur: { build: 'imp', skin: '#8a7a4a', tunic: '#4a3a22', armor: '#68502b', bracer: '#97713a', belt: '#2a1c0e', head: 'human', ears: 'goblin', eyeCol: '#ffd23a', smile: true, weapon: 'torch', headR: 0.55, bodyW: 0.8, torso: 0.85 },
+      assassin: { build: 'imp', skin: '#c8b8a8', body: 'robe', tunic: '#2a2530', hoodCol: '#1f1a26', head: 'hood', eyeCol: '#ff5a3a', weapon: 'dagger', headR: 0.52, torso: 0.95, trim: '#3a3a4a' },
+      thief: { build: 'imp', skin: '#c8b8a8', tunic: '#5a5a2a', armor: '#4b4926', bracer: '#77713c', belt: '#2e2a14', head: 'human', eyeCol: '#3a3a4a', weapon: 'dagger', headR: 0.52, torso: 0.9, bodyW: 0.8 },
+      hulker: { build: 'brute', hump: 0.7, spikes: 0.5, skin: '#5a1a5a', tunic: '#3a122a', belt: '#24101a', head: 'orc', eyeCol: '#ff2a6a', scar: true, hair: 'wild', weapon: 'cleaver', headR: 0.6, bodyW: 1.25, torso: 1.2 },
+      gargoyle: { build: 'flyer', skin: '#6a6a72', tunic: '#4a4a52', armor: '#8a8a94', belt: '#3a3a44', head: 'demon', eyeCol: '#ff3a2a', wings: true, wingCol: '#5a5a64', weapon: 'club', headR: 0.55, torso: 1.0, bodyW: 1.0 },
+      shaman: { build: 'caster', skin: '#a07a3a', tunic: '#6a4a2a', armor: '#80602d', bracer: '#a57e3c', belt: '#3a2a14', skirt: '#5a4a3a', head: 'orc', eyeCol: '#ffd23a', earring: true, scar: true, totem: true, weapon: 'staff', glowCol: '#ffb04a', headR: 0.55, torso: 0.95, bodyW: 0.9 },
+      orcShield: { build: 'brute', hump: 0.25, skin: '#5a8a3a', tunic: '#4a3a22', armor: '#6b6f7c', bracer: '#806634', belt: '#2e2010', head: 'orc', eyeCol: '#ff5a3a', hair: 'topknot', weapon: 'club', headR: 0.58, bodyW: 1.05, torso: 1.0 },
+      mender: { build: 'caster', skin: '#4a8f4f', body: 'robe', tunic: '#2a5a38', hoodCol: '#1f4529', head: 'hood', eyeCol: '#8affb0', weapon: 'staff', glowCol: '#7aff9a', headR: 0.55, torso: 0.95, trim: '#4a8a5a' },
+      phaseStalker: { build: 'spectral', skin: '#aab8d8', body: 'robe', tunic: '#2a3048', hoodCol: '#1c2236', head: 'hood', eyeCol: '#9fd0ff', weapon: 'dagger', headR: 0.52, torso: 0.95, trim: '#4a5a8a' },
+      demon: { build: 'brute', tail: { len: 1.2, col: '#c8382a', dark: '#7a1f16' }, skin: '#c8382a', tunic: '#6a1f1a', armor: '#8a3a3a', belt: '#3a1210', trim: '#ff8a3a', head: 'demon', eyeCol: '#ffe23a', weapon: 'cleaver', headR: 0.58, bodyW: 1.0, torso: 1.0 },
+      lich: { build: 'caster', skin: '#7a6a9a', body: 'robe', tunic: '#2a1a3a', hoodCol: '#1f142a', head: 'rot', eyeCol: '#8aff9a', crown: true, weapon: 'staff', glowCol: '#8aff9a', headR: 0.52, torso: 1.0, cape: '#1f142a', trim: '#c9a54a' },
       fireGolem: 'art:fireGolem',
       stoneGolem: 'art:stoneGolem',
       bat: 'art:bat',
@@ -653,7 +684,10 @@ class Enemy {
       warMachine: 'warMachine',
       voidLord: 'voidLord',
       iceWraith: 'iceWraith',
-      stormSpirit: 'stormSpirit'
+      stormSpirit: 'stormSpirit',
+      splitter: { build: 'imp', skin: '#9a6aaa', tunic: '#5a3a6a', head: 'human', eyeCol: '#d8a8ff', smile: true, weapon: 'club', headR: 0.6, torso: 0.8, bodyW: 1.15 },
+      splitterSmall: { build: 'imp', skin: '#ba8aca', tunic: '#7a4a8a', head: 'human', eyeCol: '#e8c0ff', smile: true, headR: 0.65, torso: 0.75, bodyW: 1.1 },
+      splitterTiny: { build: 'imp', skin: '#d8a8e8', tunic: '#9a6aaa', head: 'human', eyeCol: '#f8d8ff', smile: true, headR: 0.7, torso: 0.7, bodyW: 1.05 }
     };
     return m[this.type] || { skin: this.color || '#8a8a8a', head: 'human', weapon: 'club', headR: 0.52, torso: 0.9 };
   }

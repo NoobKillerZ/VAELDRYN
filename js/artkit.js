@@ -315,15 +315,124 @@ var ART = (function () {
 
   // Dibuja una criatura humanoide completa.
   // spec: colores y accesorios. st: {r, walk, atk, anim, freeze, flying, flap, enraged, ghost}
+  // ============================================================
+  //  ARQUETIPOS CORPORALES — cada criatura con silueta y marcha
+  //  propias. 'warrior' replica el comportamiento clásico.
+  // ============================================================
+  var BUILDS = {
+    warrior: { legs: 'full', legL: 1, headR: 1, torso: 1, bodyW: 1, armW: 1, bob: 1, freq: 1, lean: 1, hunch: 0, bounce: false, death: null },
+    imp:     { legs: 'full', legL: 0.52, headR: 1.55, torso: 0.82, bodyW: 1.18, armW: 0.9, bob: 2.1, freq: 1.55, lean: 1.6, hunch: 0.06, bounce: true, death: 'pop' },
+    brute:   { legs: 'full', legL: 0.88, headR: 0.46, torso: 0.86, bodyW: 1.5, armW: 1.85, bob: 1.25, freq: 0.62, lean: 0.7, hunch: 0.2, bounce: false, death: 'collapse' },
+    caster:  { legs: 'none', legL: 0, headR: 1.06, torso: 1.04, bodyW: 1, armW: 0.85, bob: 0.55, freq: 0.5, lean: 0.4, hunch: 0.1, bounce: false, death: 'dissolve' },
+    spectral:{ legs: 'wisp', legL: 0, headR: 1.1, torso: 0.98, bodyW: 0.94, armW: 0.8, bob: 0.7, freq: 0.6, lean: 0.5, hunch: 0.04, bounce: false, death: 'dissolve' },
+    flyer:   { legs: 'tucked', legL: 0.5, headR: 1.05, torso: 0.9, bodyW: 1.05, armW: 0.85, bob: 0.8, freq: 1.2, lean: 1, hunch: 0.12, bounce: false, death: 'collapse' }
+  };
+
+  // Curva de ataque: anticipación → golpe → recuperación.
+  function atkPose(p) {
+    // p ∈ [0,1] → { lean, reach, swing }
+    if (p <= 0) return { lean: 0, reach: 0, swing: 0 };
+    if (p < 0.3) { var w = p / 0.3; return { lean: -0.10 * w, reach: -0.16 * w, swing: -0.9 * w }; }
+    if (p < 0.5) { var s = (p - 0.3) / 0.2; return { lean: -0.10 + 0.34 * s, reach: -0.16 + 1.1 * s, swing: -0.9 + 2.6 * s }; }
+    if (p < 0.75) { var r = (p - 0.5) / 0.25; return { lean: 0.24 * (1 - r * 0.6), reach: 0.94 - 0.5 * r, swing: 1.7 - 1.0 * r }; }
+    var q = (p - 0.75) / 0.25; return { lean: 0.1 * (1 - q), reach: 0.44 * (1 - q), swing: 0.7 * (1 - q) };
+  }
+
+  // Cola de criatura con meneo sincronizado a la marcha.
+  function tail(c, x, y, len, drop, wag, col, dark, thick) {
+    c.save();
+    c.translate(x, y);
+    var w1 = Math.sin(wag) * len * 0.3, w2 = Math.sin(wag - 0.8) * len * 0.42;
+    taper(c, 0, 0, -len * 0.45, drop + w1 * 0.4, thick, thick * 0.7, col, dark);
+    taper(c, -len * 0.45, drop + w1 * 0.4, -len * 0.9, drop * 1.6 + w2 * 0.5, thick * 0.7, thick * 0.35, col, dark);
+    c.restore();
+  }
+
+  // Joroba / giba sobre la espalda.
+  function hump(c, x, y, w, h, col, dark) {
+    var g = c.createLinearGradient(0, y - h, 0, y);
+    g.addColorStop(0, shade(col, 24)); g.addColorStop(1, col);
+    c.fillStyle = g;
+    c.beginPath();
+    c.moveTo(x - w, y);
+    c.quadraticCurveTo(x - w * 0.5, y - h * 1.5, x + w * 0.3, y - h * 0.9);
+    c.quadraticCurveTo(x + w * 0.9, y - h * 0.4, x + w, y);
+    c.closePath(); c.fill();
+    c.strokeStyle = rgba(dark, 0.7); c.lineWidth = 1.1; c.stroke();
+  }
+
+  // Cresta de púas dorsales.
+  function spikeRidge(c, x1, x2, y, n, h, col, dark) {
+    for (var i = 0; i < n; i++) {
+      var px = x1 + (x2 - x1) * (i / Math.max(1, n - 1));
+      var ph = h * (0.65 + 0.35 * Math.sin(i * 1.7));
+      c.fillStyle = i % 2 ? col : dark;
+      c.beginPath();
+      c.moveTo(px - h * 0.32, y);
+      c.lineTo(px, y - ph);
+      c.lineTo(px + h * 0.32, y);
+      c.closePath(); c.fill();
+    }
+  }
+
   function figure(c, spec, st) {
     var r = st.r;
+    var B = BUILDS[spec.build] || BUILDS.warrior;
     c.save();
     if (st.ghost) c.globalAlpha = st.ghost;
+
+    // ---- ESTADO: aparición (pop elástico) ----
+    if (st.spawn > 0) {
+      var sp = Math.min(1, st.spawn);
+      var el = 1 + Math.sin(sp * Math.PI) * 0.35;
+      c.scale(0.35 + 0.65 * (1 - sp) * el, 0.35 + 0.65 * (1 - sp));
+    }
+
+    // ---- ESTADO: daño (squash + retroceso direccional) ----
+    var hurt = Math.max(0, Math.min(1, st.hurt || 0));
+    if (hurt > 0) {
+      var hk = hurt * hurt;
+      c.translate(-hk * r * 0.16, 0);
+      c.scale(1 + hk * 0.14, 1 - hk * 0.16);
+    }
+
+    // ---- ESTADO: muerte por arquetipo ----
+    var deathP = (st.death != null && st.death >= 0) ? Math.min(1, st.death) : -1;
+    var deathStyle = spec.deathStyle || B.death;
+    var frozenWalk = st.walk;
+    var frozenAtk = st.atk || 0;
+    if (deathP >= 0 && deathStyle) {
+      st.walk = 0; st.atk = 0;
+      var d = deathP;
+      if (deathStyle === 'collapse') {
+        // desplome hacia delante con rebote
+        var fall = Math.min(1, d * 1.6);
+        c.rotate((st.face || 1) * fall * fall * 1.35);
+        c.translate(0, fall * r * 0.35);
+        if (d > 0.62 && d < 0.8) c.translate(0, Math.sin((d - 0.62) / 0.18 * Math.PI) * r * 0.12);
+        c.globalAlpha *= d > 0.75 ? Math.max(0, 1 - (d - 0.75) / 0.25) : 1;
+      } else if (deathStyle === 'dissolve') {
+        // ascenso espectral y desvanecimiento
+        c.translate(0, -d * r * 1.2);
+        c.scale(1 - d * 0.25, 1 + d * 0.3);
+        c.globalAlpha *= Math.max(0, 1 - d * 0.85);
+      } else if (deathStyle === 'pop') {
+        // squash exagerado y encogimiento
+        var pp = Math.min(1, d * 1.8);
+        if (pp < 0.4) c.scale(1 + pp * 0.5, 1 - pp * 0.45);
+        else { var q2 = (pp - 0.4) / 0.6; c.scale((1 + 0.2) * (1 - q2), (1 - 0.18) * (1 - q2)); c.globalAlpha *= 1 - q2; }
+      } else if (deathStyle === 'crumble') {
+        // desmoronamiento: se encoge y hunde
+        c.translate(0, d * r * 0.5);
+        c.scale(1 - d * 0.3, 1 - d * 0.55);
+        c.globalAlpha *= Math.max(0, 1 - d * 0.9);
+      }
+    }
 
     // sombra inferior suave (doble capa)
     if (!st.flying) {
       c.fillStyle = 'rgba(0,0,0,0.18)';
-      c.beginPath(); c.ellipse(0, r * 1.22, r * 0.55, r * 0.14, 0, 0, 6.28); c.fill();
+      c.beginPath(); c.ellipse(0, r * 1.22, r * 0.55 * (B.bodyW * 0.6 + 0.4), r * 0.14, 0, 0, 6.28); c.fill();
       c.fillStyle = 'rgba(0,0,0,0.08)';
       c.beginPath(); c.ellipse(0, r * 1.28, r * 0.45, r * 0.08, 0, 0, 6.28); c.fill();
     }
@@ -333,16 +442,22 @@ var ART = (function () {
     var pant = spec.pant || '#3a2f22', boot = spec.boot || '#241d12';
     var armor = spec.armor, armorDark = armor ? shade(armor, -40) : null;
     var trim = spec.trim || '#c9a54a';
-    var headR = spec.headR || 0.52;
+    var headR = (spec.headR || 0.52) * B.headR;
+    var torsoH = (spec.torso || 0.9) * B.torso;
+    var bodyW = (spec.bodyW || 0.85) * B.bodyW;
+    var legLmul = B.legL;
 
     var walk = st.walk, atk = st.atk || 0;
+    var ap = atkPose(atk);
     var sw = Math.sin(walk), cw = Math.cos(walk);
-    var bob = Math.abs(sw) * -r * 0.12 * (st.freeze ? 0.2 : 1);
-    var breath = Math.sin(st.anim * 1.35) * r * 0.025;
-    var attackLean = atk > 0.05 ? Math.sin(Math.min(1, atk) * Math.PI) * r * 0.035 : 0;
-    var hipY = r * 0.62 + bob + breath, shoulderY = r * 0.62 - spec.torso * r + bob + breath;
-    var ground = r * 1.25;
-    var lean = sw * 0.04;
+    // marcha: los 'bounce' (imps) botan con |sin|; el resto ondula
+    var gaitSw = B.bounce ? Math.abs(Math.sin(walk * B.freq)) : Math.sin(walk * B.freq);
+    var bob = gaitSw * -r * 0.12 * B.bob * (st.freeze ? 0.2 : 1);
+    var breath = Math.sin(st.anim * 1.35 + (spec.breathOff || 0)) * r * 0.025;
+    var attackLean = ap.lean * r * 0.35;
+    var hipY = r * 0.62 + bob + breath, shoulderY = r * 0.62 - torsoH * r + bob + breath + B.hunch * r * 0.3;
+    var ground = r * (1.25 - (1 - legLmul) * 0.28);
+    var lean = sw * 0.04 * B.lean;
 
     c.rotate(lean + attackLean);
     c.translate(0, bob);
@@ -355,35 +470,62 @@ var ART = (function () {
       wing(c, r * 0.3, shoulderY, 1, r * 1.35, flap, wc, wd);
     }
 
-    // ---------- PIERNAS ----------
+    // ---------- PIERNAS / BASE ----------
     var legL = ground - hipY;
     var legShade = shade(pant, -30);
-    for (var side = 0; side < 2; side++) {
-      var ph = walk + (side ? Math.PI : 0);
-      var sp = Math.sin(ph);
-      var lift = Math.max(0, Math.cos(ph)) * r * 0.22;
-      var fx = (side ? 1 : -1) * r * 0.3 + sp * r * 0.14;
-      var fy = ground - lift;
-      var kx = fx * 0.45 + sp * r * 0.18, ky = hipY + legL * 0.52 - lift * 0.5;
-      var hipX = (side ? 1 : -1) * r * 0.26;
-      // muslo (ancho) → rodilla
-      taper(c, hipX, hipY + r * 0.06, kx, ky, r * 0.34, r * 0.2, pant, legShade);
-      // espinilla → tobillo
-      taper(c, kx, ky, fx, fy - r * 0.08, r * 0.2, r * 0.1, pant, legShade);
-      // botín con empeine
-      var sh = sp * 0.18;
-      c.fillStyle = boot;
-      c.beginPath();
-      c.ellipse(fx + sp * r * 0.1, fy - r * 0.04, r * 0.28, r * 0.14, sh, 0, 6.28);
-      c.fill();
-      c.fillStyle = shade(boot, 22);
-      c.beginPath();
-      c.ellipse(fx + sp * r * 0.1, fy - r * 0.08, r * 0.13, r * 0.06, sh, 0, 6.28);
-      c.fill();
+    if (B.legs === 'wisp') {
+      // cola espectral: cintas ondulantes que se afontan hacia abajo
+      for (var wr = 0; wr < 3; wr++) {
+        var wph = st.anim * 2.2 + wr * 1.9;
+        var wcol = wr === 0 ? tunic : shade(tunic, wr * 14);
+        taper(c, (wr - 1) * r * 0.22, hipY - r * 0.05,
+          (wr - 1) * r * 0.3 + Math.sin(wph) * r * 0.14, hipY + legL * 0.5,
+          r * (0.34 - wr * 0.07), r * 0.1, wcol, tunicDark);
+        taper(c, (wr - 1) * r * 0.3 + Math.sin(wph) * r * 0.14, hipY + legL * 0.5,
+          Math.sin(wph - 0.7) * r * 0.18, ground + r * 0.1,
+          r * 0.1, 2, wcol, tunicDark);
+      }
+    } else if (B.legs === 'tucked') {
+      // patas recogidas bajo el cuerpo (voladores)
+      for (var tk = 0; tk < 2; tk++) {
+        var ts = tk ? 1 : -1;
+        taper(c, ts * r * 0.2, hipY, ts * r * 0.32 + Math.sin(st.anim * 3 + tk) * r * 0.04, hipY + legL * 0.4, r * 0.16, r * 0.08, pant, legShade);
+        c.fillStyle = boot;
+        c.beginPath(); c.arc(ts * r * 0.36, hipY + legL * 0.44, r * 0.09, 0, 6.28); c.fill();
+      }
+    } else if (B.legs !== 'none') {
+      for (var side = 0; side < 2; side++) {
+        var ph = walk * B.freq + (side ? Math.PI : 0);
+        var sp = Math.sin(ph);
+        var lift = Math.max(0, Math.cos(ph)) * r * 0.22 * (0.6 + legLmul * 0.4);
+        var fx = (side ? 1 : -1) * r * 0.3 * B.bodyW * 0.8 + sp * r * 0.14;
+        var fy = ground - lift;
+        var kx = fx * 0.45 + sp * r * 0.18, ky = hipY + legL * 0.52 - lift * 0.5;
+        var hipX = (side ? 1 : -1) * r * 0.26 * B.bodyW * 0.85;
+        // muslo (ancho) → rodilla
+        taper(c, hipX, hipY + r * 0.06, kx, ky, r * 0.34, r * 0.2, pant, legShade);
+        // espinilla → tobillo
+        taper(c, kx, ky, fx, fy - r * 0.08, r * 0.2, r * 0.1, pant, legShade);
+        // botín con empeine
+        var sh = sp * 0.18;
+        c.fillStyle = boot;
+        c.beginPath();
+        c.ellipse(fx + sp * r * 0.1, fy - r * 0.04, r * 0.28, r * 0.14, sh, 0, 6.28); c.fill();
+        c.fillStyle = shade(boot, 22);
+        c.beginPath();
+        c.ellipse(fx + sp * r * 0.1, fy - r * 0.08, r * 0.13, r * 0.06, sh, 0, 6.28); c.fill();
+      }
     }
 
+    // ---------- EXTRAS DE SILUETA ----------
+    if (spec.tail) {
+      tail(c, -r * 0.3 * B.bodyW, hipY - r * 0.1, r * spec.tail.len, r * 0.5,
+        walk * B.freq * 2, spec.tail.col || tunic, spec.tail.dark || tunicDark, r * 0.22);
+    }
+    if (spec.hump) hump(c, -r * 0.1, shoulderY + r * 0.12, r * 0.5, r * spec.hump, skin, skinDark);
+    if (spec.spikes) spikeRidge(c, -r * 0.5, r * 0.2, shoulderY - r * 0.02, 4, r * spec.spikes, shade(tunic, 26), tunicDark);
+
     // ---------- CUERPO ----------
-    var bodyW = spec.bodyW || 0.85;
     if (spec.body === 'robe') {
       var rg = c.createLinearGradient(-r * 0.8, shoulderY, r * 0.8, ground);
       rg.addColorStop(0, tunic);
@@ -511,16 +653,17 @@ var ART = (function () {
 
     // ---------- BRAZOS ----------
     var armCol = spec.sleeve || skin;
+    var armW = B.armW;
     for (var a = 0; a < 2; a++) {
-      var aph = walk + (a ? Math.PI : 0);
+      var aph = walk * B.freq + (a ? Math.PI : 0);
       var asp = Math.sin(aph);
-      var ax = (a ? 1 : -1) * r * 0.52;
-      var attackReach = a === 1 && atk > 0.05 ? Math.sin(Math.min(1, atk) * Math.PI) : 0;
+      var ax = (a ? 1 : -1) * r * 0.52 * (0.7 + B.bodyW * 0.3);
+      var attackReach = a === 1 ? ap.reach : 0;
       var handY = shoulderY + r * 0.58 + asp * r * 0.18 - attackReach * r * 0.12;
-      var handX = ax + asp * r * 0.14 + attackReach * r * 0.18;
-      var elbowX = ax * 0.82 + asp * r * 0.08 + attackReach * r * 0.08, elbowY = shoulderY + r * 0.26 - attackReach * r * 0.06;
-      taper(c, ax, shoulderY, elbowX, elbowY, r * 0.26, r * 0.18, armCol, shade(armCol, -26));
-      taper(c, elbowX, elbowY, handX, handY, r * 0.18, r * 0.11, armCol, shade(armCol, -34));
+      var handX = ax + asp * r * 0.14 + attackReach * r * 0.2;
+      var elbowX = ax * 0.82 + asp * r * 0.08 + attackReach * r * 0.1, elbowY = shoulderY + r * 0.26 - attackReach * r * 0.08 - B.hunch * r * 0.2;
+      taper(c, ax, shoulderY, elbowX, elbowY, r * 0.26 * armW, r * 0.18 * armW, armCol, shade(armCol, -26));
+      taper(c, elbowX, elbowY, handX, handY, r * 0.18 * armW, r * 0.11 * armW, armCol, shade(armCol, -34));
       // mano
       c.fillStyle = shade(armCol, 18);
       c.beginPath(); c.arc(handX, handY, r * 0.13, 0, 6.28); c.fill();
@@ -568,6 +711,8 @@ var ART = (function () {
     // ---------- ARMA ----------
     if (spec.weapon) drawWeapon(c, spec, r, shoulderY, walk, atk, st);
 
+    // restaurar el estado mutado por la pose de muerte
+    st.walk = frozenWalk; st.atk = frozenAtk;
     c.restore();
   }
 
@@ -927,18 +1072,13 @@ var ART = (function () {
   function drawWeapon(c, spec, r, shoulderY, walk, atk, st) {
     var w = spec.weapon;
     var swing = Math.sin(walk) * 0.2;
-    var atkSwing = 0;
-    if (atk > 0.05) {
-      // preparación → golpe → recuperación (más amplio y dramático)
-      if (atk < 0.35) atkSwing = -0.2 + atk / 0.35 * -0.8;
-      else if (atk < 0.55) atkSwing = -1.0 + (atk - 0.35) / 0.2 * 2.2;
-      else if (atk < 0.8) atkSwing = 1.2 - (atk - 0.55) / 0.25 * 0.6;
-      else atkSwing = 0.6 - (atk - 0.8) * 0.4;
-    }
-    var handX = r * 0.45, handY = shoulderY + r * 0.55 + swing * r * 0.1;
-    // estela de corte durante el golpe
-    if (atk > 0.35 && atk < 0.62) {
-      var a2 = (atk - 0.35) / 0.27;
+    var apo = atkPose(atk);
+    var atkSwing = apo.swing;
+    var reachX = apo.reach * r * 0.2, reachY = -apo.reach * r * 0.12;
+    var handX = r * 0.45 + reachX, handY = shoulderY + r * 0.55 + swing * r * 0.1 + reachY;
+    // estela de corte durante el golpe (ventana alineada a atkPose)
+    if (atk > 0.3 && atk < 0.55) {
+      var a2 = (atk - 0.3) / 0.25;
       c.save();
       c.translate(handX, handY);
       c.globalAlpha = (1 - Math.abs(a2 - 0.5) * 2) * 0.45;
@@ -994,8 +1134,14 @@ var ART = (function () {
       c.fillRect(-r * 0.02, -r * 0.08, r * 0.22, r * 0.12);
     } else if (w === 'staff') {
       rod(c, 0, 0, r * 0.3, -r * 1.5, r * 0.16, '#4a3018', '#241206');
+      // canalización: el orbe crece durante la anticipación del hechizo
+      var charge = atk > 0 && atk < 0.5 ? Math.sin(Math.min(1, atk / 0.5) * Math.PI * 0.5) : 0;
       var orbY = -r * 1.55 + Math.sin(st.anim * 2) * r * 0.05;
-      orb(c, r * 0.32, orbY, r * 0.26, spec.glowCol || '#c890ff');
+      if (charge > 0.05) {
+        c.fillStyle = rgba(spec.glowCol || '#c890ff', 0.28 * charge);
+        c.beginPath(); c.arc(r * 0.32, orbY, r * (0.3 + charge * 0.3), 0, 6.28); c.fill();
+      }
+      orb(c, r * 0.32, orbY, r * (0.26 + charge * 0.16), spec.glowCol || '#c890ff');
       c.fillStyle = '#5a3a1e';
       c.beginPath(); c.arc(r * 0.32, orbY, r * 0.12, 0, 6.28); c.fill();
       if (spec.totem) {
@@ -1290,7 +1436,12 @@ var ART = (function () {
     fireGolem: fireGolem,
     wing: wing,
     orb: orb,
-    rod: rod
+    rod: rod,
+    atkPose: atkPose,
+    tail: tail,
+    hump: hump,
+    spikeRidge: spikeRidge,
+    BUILDS: BUILDS
   };
 })();
 

@@ -1292,7 +1292,8 @@ class Tower {
       sniper: this.drawSniper,
       holy: this.drawHoly,
       banner: this.drawBanner,
-      warlock: this.drawWarlock
+      warlock: this.drawWarlock,
+      barracks: this.drawBarracks
     }[this.type];
     if (drawFn) {
       var ws = 1 + lv * 0.14;
@@ -1363,6 +1364,78 @@ class Tower {
     else if (t === 'druid') this._bodyLiving(ctx, game);
     else if (t === 'tesla') this._bodyCrystal(ctx, game);
     else if (t === 'warlock') this._bodyVoid(ctx, game);
+    else if (t === 'barracks') this._bodyTent(ctx, game);
+  }
+
+  // Banderín triangular ondeante en un mástil.
+  _pennant(ctx, x, y, len, time, col) {
+    var w1 = Math.sin(time * 5 + x) * 1.6, w2 = Math.sin(time * 5 + x + 1.2) * 2.2;
+    ctx.strokeStyle = '#3a2a16'; ctx.lineWidth = 1; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - len * 0.6); ctx.stroke();
+    ctx.fillStyle = col || '#c9483a';
+    ctx.beginPath();
+    ctx.moveTo(x, y - len * 0.6);
+    ctx.quadraticCurveTo(x + len * 0.45, y - len * 0.55 + w1, x + len, y - len * 0.42 + w2);
+    ctx.quadraticCurveTo(x + len * 0.45, y - len * 0.38 + w1, x, y - len * 0.3);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,220,160,0.8)';
+    ctx.beginPath(); ctx.arc(x, y - len * 0.62, 0.9, 0, 6.28); ctx.fill();
+  }
+
+  _bodyTent(ctx, game) {
+    var t = game.time;
+    // tienda de campaña militar
+    var cg = ctx.createLinearGradient(-16, -14, 16, 12);
+    cg.addColorStop(0, '#8a6434');
+    cg.addColorStop(0.5, '#6a4a2a');
+    cg.addColorStop(1, '#4a3018');
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.moveTo(-17, 12);
+    ctx.quadraticCurveTo(-13, -10, 0, -16);
+    ctx.quadraticCurveTo(13, -10, 17, 12);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(20,12,6,0.85)'; ctx.lineWidth = 1.4; ctx.stroke();
+    // costuras radiales
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1;
+    for (var seam = -1; seam <= 1; seam++) {
+      ctx.beginPath();
+      ctx.moveTo(0, -15);
+      ctx.quadraticCurveTo(seam * 8, -2, seam * 13, 11);
+      ctx.stroke();
+    }
+    // entrada oscura con luz interior parpadeante
+    var gl = 0.55 + 0.45 * Math.sin(t * 6);
+    ctx.fillStyle = '#1c1008';
+    ctx.beginPath();
+    ctx.moveTo(-5, 12); ctx.lineTo(-4, -2); ctx.quadraticCurveTo(0, -6, 4, -2); ctx.lineTo(5, 12);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,170,60,' + (0.16 + gl * 0.14) + ')';
+    ctx.beginPath();
+    ctx.moveTo(-3.4, 12); ctx.lineTo(-3, -1); ctx.quadraticCurveTo(0, -4, 3, -1); ctx.lineTo(3.4, 12);
+    ctx.closePath(); ctx.fill();
+    // remate central + banderín ondeante
+    this._pennant(ctx, 0, -17, 12, t + 2, '#c9a84c');
+    // faldón de estacas
+    ctx.strokeStyle = '#2e2010'; ctx.lineWidth = 1.6;
+    for (var peg = -2; peg <= 2; peg++) {
+      if (!peg) continue;
+      ctx.beginPath(); ctx.moveTo(peg * 6.5, 10); ctx.lineTo(peg * 8.5, 14); ctx.stroke();
+    }
+    // escudo heráldico plantado junto a la entrada
+    ctx.save();
+    ctx.translate(13, 6);
+    ctx.rotate(0.08 + Math.sin(t * 1.6) * 0.02);
+    ctx.fillStyle = '#6b6f7c';
+    ctx.beginPath();
+    ctx.moveTo(-3.4, -5); ctx.lineTo(3.4, -5); ctx.lineTo(3.4, 2);
+    ctx.quadraticCurveTo(3.4, 5.5, 0, 6.5);
+    ctx.quadraticCurveTo(-3.4, 5.5, -3.4, 2);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#d8dce4'; ctx.lineWidth = 0.9; ctx.stroke();
+    ctx.fillStyle = '#c9483a';
+    ctx.beginPath(); ctx.moveTo(0, -3.5); ctx.lineTo(2, 0); ctx.lineTo(0, 3.5); ctx.lineTo(-2, 0); ctx.closePath(); ctx.fill();
+    ctx.restore();
   }
 
   _bodyWood(ctx, game, t) {
@@ -1406,6 +1479,8 @@ class Tower {
     ctx.fillStyle = '#1c1208';
     ctx.fillRect(-15, 3.5, 1.6, 1.6);
     ctx.fillRect(13.4, 3.5, 1.6, 1.6);
+    // banderín en la esquina de la plataforma
+    if (t !== 'banner') this._pennant(ctx, 14, top - 7, 10, game.time, '#c9483a');
   }
 
   _bodyStone(ctx, game, t) {
@@ -1503,6 +1578,8 @@ class Tower {
       ctx.beginPath(); ctx.moveTo(-9, -9); ctx.lineTo(9, -9); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-7, -5); ctx.lineTo(7, -5); ctx.stroke();
     }
+    // banderín sobre la almena izquierda
+    if (!holy) this._pennant(ctx, -8, -18, 9, game.time + 1, '#c9483a');
   }
 
   _bodyLiving(ctx, game) {
@@ -1617,6 +1694,52 @@ class Tower {
     for (var p = 0; p < 3; p++) {
       var a = game.time * 1.2 + p * 2.09;
       ctx.beginPath(); ctx.arc(Math.cos(a) * 10, -6 + Math.sin(a) * 4, 1.5, 0, 6.28); ctx.fill();
+    }
+  }
+
+  // Guarnición de barracas: dos soldados en guardia con idle respirado.
+  drawBarracks(ctx, game) {
+    var t = game.time;
+    for (var s = 0; s < 2; s++) {
+      var sx = s === 0 ? -9 : 9;
+      var flip = s === 0 ? 1 : -1;
+      var breath = Math.sin(t * 2 + s * 2.4) * 0.6;
+      var idle = Math.sin(t * 1.3 + s * 1.7) * 0.08;
+      ctx.save();
+      ctx.translate(sx, 6 + breath * 0.4);
+      ctx.rotate(idle * flip);
+      // piernas firmes
+      ctx.strokeStyle = '#3a3020'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-1.6, 2); ctx.lineTo(-2.2, 7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(1.6, 2); ctx.lineTo(2.2, 7); ctx.stroke();
+      // torso con coraza
+      ctx.fillStyle = '#5a626e';
+      ctx.beginPath(); ctx.roundRect(-3.2, -4.5, 6.4, 7.5, 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.beginPath(); ctx.roundRect(-2.4, -3.8, 2, 5, 1); ctx.fill();
+      // cabeza con casco
+      ctx.fillStyle = '#e8c8a0';
+      ctx.beginPath(); ctx.arc(0, -7, 2.4, 0, 6.28); ctx.fill();
+      ctx.fillStyle = '#6b6f7c';
+      ctx.beginPath(); ctx.arc(0, -7.4, 2.6, Math.PI, 0); ctx.fill();
+      ctx.fillRect(-2.6, -7.6, 5.2, 1);
+      // lanza en posición de guardia (leve oscilación)
+      var lanceSway = Math.sin(t * 1.8 + s * 3) * 0.06;
+      ctx.save();
+      ctx.translate(flip * 3.4, -3);
+      ctx.rotate(flip * (0.12 + lanceSway));
+      ctx.strokeStyle = '#4a3018'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(0, 6); ctx.lineTo(0, -13); ctx.stroke();
+      ctx.fillStyle = '#c9ccd6';
+      ctx.beginPath(); ctx.moveTo(0, -13); ctx.lineTo(-1.4, -10); ctx.lineTo(1.4, -10); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      // escudo redondo al frente
+      ctx.fillStyle = '#6b6f7c';
+      ctx.beginPath(); ctx.arc(flip * 3.6, 0.5 + breath * 0.2, 3, 0, 6.28); ctx.fill();
+      ctx.strokeStyle = '#d8dce4'; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.fillStyle = '#c9a84c';
+      ctx.beginPath(); ctx.arc(flip * 3.6, 0.5 + breath * 0.2, 1.1, 0, 6.28); ctx.fill();
+      ctx.restore();
     }
   }
 

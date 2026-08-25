@@ -45,6 +45,11 @@
   .stats b { color: #ffe08a; }
   footer { text-align: center; color: #6a5a44; font-size: 11px; padding: 20px 0 30px; }
   @media (max-width: 600px) { body { padding: 10px; } .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+  @media print {
+    body { background: #120c06; }
+    .card { break-inside: avoid; }
+    section { break-before: auto; }
+  }
 </style>
 </head>
 <body>
@@ -108,10 +113,11 @@ function makeCard(host, w, h, name, html) {
 
 /* ===================== ENEMIGOS ===================== */
 function enemySt(r, t, flying) {
+  var cyc = t % 3.2;
   return {
-    r: r, walk: Math.sin(t * 4) * 0.9, atk: 0, anim: t * 5, freeze: false,
+    r: r, walk: t * 4, atk: cyc < 1 ? cyc : 0, anim: t * 5, freeze: false,
     flying: !!flying, flap: Math.sin(t * 9), blink: (t * 5 % 8.5) > 8.18,
-    face: 1, enraged: false, ghost: 1
+    face: 1, enraged: false, ghost: 1, hurt: 0, death: -1, spawn: 0
   };
 }
 
@@ -229,7 +235,7 @@ function buildEnemies() {
 /* ===================== TORRES ===================== */
 var stubGame = {
   time: 0, wave: 8, enemies: [], projectiles: [], particles: [], texts: [],
-  lightning: [], soldiers: [], weatherMult: function () { return 1; },
+  lightning: [], soldiers: [], towers: [], weatherMult: function () { return 1; },
   corruption: {}, corruptTotal: 0
 };
 
@@ -267,6 +273,8 @@ function buildTowers() {
         ctx.clearRect(0, 0, 130, 130);
         if (!tower) return;
         stubGame.time = t;
+        // Tower.draw traslada internamente por (x, y): alójalo en el origen
+        tower.x = 0; tower.y = 0;
         tower.aim = -Math.PI / 2 + Math.sin(t * 0.7) * 0.35;
         ctx.save();
         ctx.translate(65, 78);
