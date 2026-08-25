@@ -643,6 +643,17 @@ class Game {
     var infl = 1 + Math.min(this.wave, 60) * 0.01;
     if (this.wave <= 5) infl += 0.12;
     var reward = Math.round(e.reward * this.goldMult * infl);
+    // Bestiario: caza acumulada por especie → +1% oro por cada 25 cazados (máx +8%)
+    try {
+      var store = {};
+      try { store = JSON.parse(localStorage.getItem('vaeldryn_bestiary') || '{}'); } catch (err2) { }
+      var prior = store[e.type] || 0;
+      store[e.type] = prior + 1;
+      localStorage.setItem('vaeldryn_bestiary', JSON.stringify(store));
+      var bonus = Math.min(0.08, Math.floor((prior + 1) / 25) * 0.01);
+      if (bonus > 0) reward = Math.round(reward * (1 + bonus));
+      if ((prior + 1) % 50 === 0) this.texts.push({ x: e.x, y: e.y - 30, txt: '📖 ' + e.name + ' ×' + (prior + 1) + ' ¡experto!', life: 1.6, max: 1.6, color: '#c8a0ff', vy: -20, size: 11 });
+    } catch (errB) { }
     this.gold += reward;
     this.stats.goldEarned += reward;
     this.kills++;
