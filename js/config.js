@@ -1,6 +1,6 @@
 'use strict';
 
-var GAME_VERSION = '0.1.2-alpha';
+var GAME_VERSION = '0.1.3-alpha';
 
 // Feedback de jugadores vía Google Forms.
 // formUrl: enlace base del formulario (viewform). entryTags/entryMsg: IDs
