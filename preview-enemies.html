@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Preview — Enemigos VAELDRYN</title>
+<title>Preview — NPCs de VAELDRYN (enemigos + torres)</title>
 <style>
   body { background:#14161c; color:#ddd; font-family:sans-serif; margin:0; }
   canvas { display:block; margin:0 auto; background:#1c2230; }
@@ -11,102 +11,152 @@
 </style>
 </head>
 <body>
-<h1>Vista previa de enemigos — VAELDRYN</h1>
-<p>Humanoides · Criaturas · Jefes</p>
-<canvas id="cv" width="920" height="920"></canvas>
+<h1>Vista previa de NPCs — VAELDRYN (enemigos · torres · soldados)</h1>
+<p>Renderizado en vivo desde js/artkit.js + js/enemies.js + js/towers.js + js/config.js</p>
+<canvas id="cv" width="1240" height="1750"></canvas>
+<script>
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+  };
+}
+</script>
+<script src="js/config.js"></script>
 <script src="js/artkit.js"></script>
 <script src="js/enemies.js"></script>
+<script src="js/towers.js"></script>
 <script>
 var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-ctx.lineJoin='round'; ctx.lineCap='round';
+ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+var T = 1.35; // fase de animación congelada (zancada media)
 
-function st(r,opts){
-  var o={r:r||26, walk:1.0, atk:0, anim:1.5, freeze:false, flying:false, flap:0.6, enraged:false, ghost:1};
-  if(opts) for(var k in opts) o[k]=opts[k]; return o;
+function st(r, opts) {
+  var o = { r: r, walk: T * 4, atk: 0, anim: T * 5, freeze: false, flying: false,
+    flap: 0.6, blink: false, face: 1, enraged: false, ghost: 1,
+    hurt: 0, death: -1, spawn: 0 };
+  if (opts) for (var k in opts) o[k] = opts[k];
+  return o;
 }
 
-function specs(name){
-  try { return Enemy.prototype._spec.call({type:name}); } catch(e){ return {skin:'#888',head:'human',weapon:'club',headR:0.52,torso:0.9}; }
-}
-
-var all=[
-  // humanoidos (tipo, radio, opts)
-  ['goblin',25],['orc',30],['berserker',30],['skeleton',27],['undead',27],
-  ['troll',34],['necromancer',28],['orcKing',33],['lord',32],['voidWalker',29],
-  ['saboteur',25],['assassin',26],['thief',26],['hulker',34],['gargoyle',32],
-  ['shaman',29],['demon',32],['lich',29],['sorcerer',28]
-];
-var art=[['art:stoneGolem',36],['art:fireGolem',36],['art:bat',24],['art:wisp',20],['art:crawler',28]];
-var bosses=[
-  ['dragon',42,false],['iceDragon',42,true],['treant',40],['warMachine',40],
-  ['voidLord',38],['iceWraith',32],['stormSpirit',32]
-];
-
-var cols=6, sx=70, sy=55, cw=138, ch=130;
-
-function drawHumanoid(name,r,x,y){
-  ctx.save(); ctx.translate(x,y);
-  ART.figure(ctx, specs(name), st(r));
+// ---------- ENEMIGOS ----------
+function drawEnemy(type, def, x, y, cell) {
+  var r = def.r || 12;
+  var scale = Math.min(3.2, Math.max(1.2, 30 / r));
+  ctx.save();
+  ctx.translate(x, y + 6);
+  ctx.scale(scale, scale);
+  var spec;
+  try { spec = Enemy.prototype._spec.call({ type: type, color: def.color }); }
+  catch (e) { spec = { skin: def.color, head: 'human', weapon: 'club', headR: 0.52, torso: 0.9 }; }
+  try {
+    if (typeof spec === 'string') {
+      if (spec === 'art:fireGolem') ART.fireGolem(ctx, r, st(r));
+      else if (spec === 'art:stoneGolem') ART.stoneGolem(ctx, r, st(r));
+      else if (spec === 'art:bat') ART.bat(ctx, r, st(r));
+      else if (spec === 'art:wisp') ART.wisp(ctx, r, st(r));
+      else if (spec === 'art:crawler') ART.spider(ctx, r, st(r));
+      else if (spec === 'dragon') Enemy.prototype._drawDragon.call({}, ctx, st(r), false);
+      else if (spec === 'iceDragon') Enemy.prototype._drawDragon.call({}, ctx, st(r), true);
+      else if (spec === 'treant') Enemy.prototype._drawTreant.call({}, ctx, st(r));
+      else if (spec === 'warMachine') Enemy.prototype._drawWarMachine.call({}, ctx, st(r));
+      else if (spec === 'voidLord') Enemy.prototype._drawVoidLord.call({}, ctx, st(r));
+      else if (spec === 'iceWraith') Enemy.prototype._drawIceWraith.call({}, ctx, st(r));
+      else if (spec === 'stormSpirit') Enemy.prototype._drawStormSpirit.call({}, ctx, st(r));
+    } else {
+      ART.figure(ctx, spec, st(r, type === 'berserker' || type === 'hulker' ? { atk: 0.42 } : null));
+    }
+  } catch (e) { }
   ctx.restore();
-  ctx.fillStyle='#8af'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
-  ctx.fillText(name, x, y+r*1.7+12);
+  ctx.fillStyle = def.boss ? '#fa3' : '#8af';
+  ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(def.name, x, y + cell * 0.44);
 }
 
-function drawArt(name,r,x,y){
-  ctx.save(); ctx.translate(x,y);
-  var s=st(r);
-  if(name==='art:stoneGolem') ART.stoneGolem(ctx,r,s);
-  else if(name==='art:fireGolem') ART.fireGolem(ctx,r,s);
-  else if(name==='art:bat') ART.bat(ctx,r,s);
-  else if(name==='art:wisp') ART.wisp(ctx,r,s);
-  else if(name==='art:crawler') ART.spider(ctx,r,s);
+// ---------- TORRES ----------
+var stubGame = { time: T, wave: 8, enemies: [], projectiles: [], particles: [], texts: [],
+  lightning: [], soldiers: [], towers: [], weatherMult: function () { return 1; }, corruption: {}, corruptTotal: 0 };
+
+function drawTower(type, x, y) {
+  var tower = null;
+  try { tower = new Tower(1, 1, type, stubGame); } catch (e) { }
+  ctx.save();
+  ctx.translate(x, y + 8);
+  ctx.scale(2.1, 2.1);
+  if (tower) {
+    tower.x = 0; tower.y = 0;
+    tower.aim = -Math.PI / 2 + 0.3;
+    try { tower.draw(ctx, stubGame); } catch (e) { }
+  }
   ctx.restore();
-  ctx.fillStyle='#8af'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
-  ctx.fillText(name.replace('art:',''), x, y+r*1.7+12);
+  ctx.fillStyle = '#7f7';
+  ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(TOWERS[type].name, x, y + 52);
 }
 
-function drawBoss(name,r,x,y,ice){
-  ctx.save(); ctx.translate(x,y);
-  var s=st(r);
-  if(name==='dragon') Enemy.prototype._drawDragon.call({},ctx,s,false);
-  else if(name==='iceDragon') Enemy.prototype._drawDragon.call({},ctx,s,true);
-  else if(name==='treant') Enemy.prototype._drawTreant.call({},ctx,s);
-  else if(name==='warMachine') Enemy.prototype._drawWarMachine.call({},ctx,s);
-  else if(name==='voidLord') Enemy.prototype._drawVoidLord.call({},ctx,s);
-  else if(name==='iceWraith') Enemy.prototype._drawIceWraith.call({},ctx,s);
-  else if(name==='stormSpirit') Enemy.prototype._drawStormSpirit.call({},ctx,s);
+// ---------- SOLDADOS ----------
+function drawSoldier(stype, x, y) {
+  var s = null;
+  try { s = new AlliedSoldier(0, 0, stype, { hp: 100, dmg: 12, rate: 0.8, range: 28 }, null); } catch (e) { }
+  ctx.save();
+  ctx.translate(x, y + 10);
+  ctx.scale(3.1, 3.1);
+  if (s) { s.anim = T; s.facing = 0.2; try { s.draw(ctx); } catch (e) { } }
   ctx.restore();
-  ctx.fillStyle='#fa3'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
-  ctx.fillText(name, x, y+Math.max(r*1.7,42)+14);
+  ctx.fillStyle = '#fc8';
+  ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText({ swordsman: 'Espadachín', archer: 'Arquero', shieldbearer: 'Portaescudos', mage: 'Mago' }[stype] || stype, x, y + 46);
 }
 
-// --- dibujar ---
-// humanoidos
-ctx.fillStyle='#5a6a8a'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
-ctx.fillText('HUMANOIDES', cw*cols/2+sx, sy-16);
-all.forEach(function(e,i){
-  drawHumanoid(e[0],e[1], sx+(i%cols)*cw, sy+Math.floor(i/cols)*ch);
-});
+// ---------- COMPOSICIÓN ----------
+function sectionTitle(txt, y, col) {
+  ctx.fillStyle = col; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(txt, cv.width / 2, y);
+}
 
-// criaturas art
-var artY=sy+Math.ceil(all.length/cols)*ch+20;
-ctx.fillStyle='#5a6a8a'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
-ctx.fillText('CRIATURAS', cw*cols/2+sx, artY-16);
-art.forEach(function(e,i){
-  drawArt(e[0],e[1], sx+(i%cols)*cw, artY+Math.floor(i/cols)*ch);
+var y = 46;
+// TORRES
+sectionTitle('— TORRES ALIADAS (14) —', y, '#7f7');
+var tY = y + 26, tCols = 7, tCell = 168;
+TOWER_TYPES.forEach(function (type, i) {
+  drawTower(type, 100 + (i % tCols) * tCell + tCell / 2 - 60, tY + Math.floor(i / tCols) * 118);
 });
+y = tY + Math.ceil(TOWER_TYPES.length / tCols) * 118 + 18;
 
-// jefes
-var bossY=artY+Math.ceil(art.length/cols)*ch+30;
-ctx.fillStyle='#fa3'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
-ctx.fillText('JEFES', cw*cols/2+sx, bossY-16);
-bosses.forEach(function(e,i){
-  drawBoss(e[0],e[1], sx+(i%cols)*cw, bossY+Math.floor(i/cols)*ch+10, e[2]);
+// SOLDADOS
+sectionTitle('— SOLDADOS ALIADOS (4) —', y, '#fc8');
+var sY = y + 26, sCols = 4, sCell = 290;
+Object.keys(SOLDIER_TYPES).forEach(function (stype, i) {
+  drawSoldier(stype, 155 + i * sCell, sY);
 });
+y = sY + 96;
 
-// footer
-ctx.fillStyle='#445'; ctx.font='10px sans-serif'; ctx.textAlign='center';
-ctx.fillText('Generated from js/artkit.js + js/enemies.js', cv.width/2, cv.height-10);
+// JEFES
+var bossKeys = Object.keys(ENEMIES).filter(function (k) { return ENEMIES[k].boss; });
+sectionTitle('— JEFES DEL CAOS (' + bossKeys.length + ') —', y, '#fa3');
+var bY = y + 26, bCols = 7, bCell = 168;
+bossKeys.forEach(function (k, i) {
+  drawEnemy(k, ENEMIES[k], 100 + (i % bCols) * bCell + bCell / 2 - 60, bY + Math.floor(i / bCols) * 128, bCell);
+});
+y = bY + Math.ceil(bossKeys.length / bCols) * 128 + 18;
+
+// ENEMIGOS
+var commonKeys = Object.keys(ENEMIES).filter(function (k) { return !ENEMIES[k].boss; })
+  .sort(function (a, b) { return ENEMIES[a].hp - ENEMIES[b].hp; });
+sectionTitle('— ENEMIGOS (' + commonKeys.length + ') —', y, '#8af');
+var eY = y + 26, eCols = 8, eCell = 150;
+commonKeys.forEach(function (k, i) {
+  drawEnemy(k, ENEMIES[k], 78 + (i % eCols) * eCell + eCell / 2 - 55, eY + Math.floor(i / eCols) * 118, eCell);
+});
+y = eY + Math.ceil(commonKeys.length / eCols) * 118 + 10;
+
+ctx.fillStyle = '#445'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+ctx.fillText('VAELDRYN ' + (typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : '') + ' — generado desde el código del juego', cv.width / 2, y + 8);
 </script>
 </body>
 </html>
