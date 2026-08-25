@@ -846,6 +846,11 @@ class Enemy {
       if (spec === 'iceWraith') { this._drawIceWraith(ctx, st); return; }
       if (spec === 'stormSpirit') { this._drawStormSpirit(ctx, st); return; }
     }
+    if (typeof spec === 'object' && spec.build) {
+      if (spec.build === 'imp' && ART.goblinHifi) { if (this.flash > 0) whitewash(spec); ART.goblinHifi(ctx, this.r, st, spec); return; }
+      if (spec.build === 'brute' && ART.bruteHifi) { if (this.flash > 0) whitewash(spec); ART.bruteHifi(ctx, this.r, st, spec); return; }
+      if (spec.build === 'caster' && ART.casterHifi) { if (this.flash > 0) whitewash(spec); ART.casterHifi(ctx, this.r, st, spec); return; }
+    }
     if (this.flash > 0) whitewash(spec);
     ART.figure(ctx, spec, st);
   }

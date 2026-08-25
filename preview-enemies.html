@@ -81,7 +81,11 @@ function drawEnemy(type, def, x, y, cell) {
       else if (spec === 'iceWraith') Enemy.prototype._drawIceWraith.call({}, ctx, st(r));
       else if (spec === 'stormSpirit') Enemy.prototype._drawStormSpirit.call({}, ctx, st(r));
     } else {
-      ART.figure(ctx, spec, st(r, type === 'berserker' || type === 'hulker' ? { atk: 0.42 } : null));
+      var stObj = st(r, type === 'berserker' || type === 'hulker' ? { atk: 0.42 } : null);
+      if (spec.build === 'imp' && ART.goblinHifi) ART.goblinHifi(ctx, r, stObj, spec);
+      else if (spec.build === 'brute' && ART.bruteHifi) ART.bruteHifi(ctx, r, stObj, spec);
+      else if (spec.build === 'caster' && ART.casterHifi) ART.casterHifi(ctx, r, stObj, spec);
+      else ART.figure(ctx, spec, stObj);
     }
   } catch (e) { }
   ctx.restore();
